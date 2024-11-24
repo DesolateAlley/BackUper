@@ -1,7 +1,9 @@
  
 #include "../include/filetools.hpp"
 #include "../include/backuper/backuper.hpp"
-
+#include "../include/pack/pack.hpp"
+#include "../include/compress/compress.hpp"
+#include "../include/encrypt/encrypt.hpp"
 
 std::string defaultWorkPath="/home/cl/Desktop/Backup_King/testFiles" , curWorkPath;
 
@@ -236,12 +238,64 @@ int main(){
                 ADworker.backupAllFile(sourceDirOrFile, targetDir);
                 break;
             }
+            ////**** 还原文件
+            case 7:{    // 还原文件（兼容性）
+                std::cout << "请输入想要移动的文件或目录名"<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK)){
+                    std::cout << "文件" << sourceDirOrFile << "不存在，请检查后重新输入"<<std::endl;
+                    break;
+                }
+                lstat(sourceDirOrFile.c_str(), &sbuf);
+                if (!(S_ISFIFO(sbuf.st_mode) || S_ISLNK(sbuf.st_mode) || S_ISREG(sbuf.st_mode) || S_ISDIR(sbuf.st_mode))){
+                    std::cout << "文件" << sourceDirOrFile << "类型不在支持范围内，抱歉！"<<std::endl;
+                    break;
+                }
+                std::cout << "请输入想要移入的目标目录"<<std::endl;
+                getline(std::cin, targetDir);
+                stat(sourceDirOrFile.c_str(), &sbuf);
+                // 若移动目录时出现同名，退出移动
+                if ((strcmp(sourceDirOrFile.c_str(), targetDir.c_str()) == 0) && (S_ISDIR(sbuf.st_mode))){
+                    std::cout << "两目录禁止同名，退出备份！"<<std::endl;
+                    break;
+                }
+                Backuper ADworker;
+                ADworker.ADmoveFileOrDir(sourceDirOrFile, targetDir);
+                break;
+            }        
+            case 8:{    // 备份目录对比
+                std::cout << "请输入想要比较的目录路径1"<<std::endl;
+                std::getline(std::cin, Dirpath1);
+                std::cout << "请输入想要比较的目录路径2"<<std::endl;
+                std::getline(std::cin, Dirpath2);
+
+                if (access(Dirpath1.c_str(), F_OK)){
+                    std::cout << "输入目录" << Dirpath1 << "不存在，请检查后重新输入"<<std::endl;
+                    break;
+                }
+                if (access(Dirpath2.c_str(), F_OK)){
+                    std::cout << "输入目录" << Dirpath2 << "不存在，请检查后重新输入"<<std::endl;
+                    break;
+                }
+
+                // lstat(Dir_path1.c_str(), &sbuf);
+                // if (!(S_ISDIR(sbuf.st_mode) || S_ISFIFO(sbuf.st_mode) || S_ISLNK(sbuf.st_mode) || S_ISREG(sbuf.st_mode)))
+                // {
+                //     cout << "文件或目录" << Dir_path1 << "不是本系统支持的文件类型，请检查后重新输入"<<std::endl;
+                //     break;
+                // }
+
+                Backuper ADworker;
+                ADworker.compareDirectories(Dirpath1, Dirpath2);
+                break;
+            }       
             default:{
                 std::cout<< "输入错误，请重新输入！"<< std::endl;
                 break;
             }
             std::cout << "按任意键继续使用"<<std::endl;
         }
+
     
     }
 
