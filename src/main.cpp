@@ -288,7 +288,44 @@ int main(){
                 Backuper ADworker;
                 ADworker.compareDirectories(Dirpath1, Dirpath2);
                 break;
-            }       
+            }
+            ////**** 打包解包
+            case 9:{    // 打包文件
+                std::cout << "请输入要打包的目录："<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK) || filetool.EmptyDir(sourceDirOrFile)){
+                    std::cout << "当前目录不存在或当前目录为空，请检查后重新输入"<<std::endl;
+                }else{
+                    std::cout << "请为打包后的文件命名(自动添加后缀)："<<std::endl;
+                    getline(std::cin, targetFile);
+                    Packer pack_worker;
+                    pack_worker.packDir(sourceDirOrFile, targetFile);
+                }
+                break;
+            }
+            case 10:{   // 解包文件
+                std::cout << "请输入需要解包的文件(包括路径和后缀)："<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK)){
+                    std::cout << "当前目录不存在，请检查后重新输入"<<std::endl;
+                    break;
+                } 
+                Packer pack_worker;
+                std::cout << "请输入解包所得目录的父目录："<<std::endl;
+                getline(std::cin, targetDir);
+                if (access(targetDir.c_str(), F_OK)){
+                    char flag;
+                    std::cout << "当前目标父目录不存在，是否需要直接创建新目录"<<std::endl
+                        << "若是请输入y/Y,其他任意键退出"<<std::endl;
+                    std::cin >> flag;
+                    if (flag == 'y' || flag == 'Y')pack_worker.mkDir(targetDir);
+                    else    break;
+                }
+                pack_worker.unpackBag(sourceDirOrFile, targetDir);
+                
+                break;
+            }
+      
             default:{
                 std::cout<< "输入错误，请重新输入！"<< std::endl;
                 break;
