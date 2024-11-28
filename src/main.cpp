@@ -325,7 +325,44 @@ int main(){
                 
                 break;
             }
-      
+            ////**** 压缩解压
+            case 11:{   // 压缩文件
+                std::cout << "请输入需要压缩的文件："<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK)) std::cout << "当前文件不存在，请检查后后重新输入"<<std::endl;
+                else{
+                    std::cout << "请为压缩后文件命名(自动添加后缀)："<<std::endl;
+                    getline(std::cin, targetFile);
+                    Compresser compresser;
+                    compresser.compress(sourceDirOrFile, targetFile);
+                }
+                break;
+            }
+            case 12:{   // 解压文件
+                std::cout << "请输入需要解压的文件(包含后缀)："<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK)) {
+                    std::cout << "当前文件不存在，请检查后后重新输入"<<std::endl;
+                }else{
+                    std::cout << "请输入存放解压后文件的父目录："<<std::endl;
+                    getline(std::cin, targetDir);
+                    if (access(targetDir.c_str(), F_OK)){
+                        char flag;
+                        std::cout << "当前目标父目录不存在，是否需要直接创建新目录"<<std::endl
+                            << "若是请输入y/Y,其他任意键退出"<<std::endl;
+                        std::cin >> flag;
+                        if (flag == 'y' || flag == 'Y') {
+                            filetool.mkDir(targetDir);
+                        }
+                        else  break;
+                    }
+                    Compresser compresser;
+                    if (compresser.decompress(sourceDirOrFile, targetDir)) std::cout << "解压成功!"<<std::endl;
+                }
+                break;
+            }
+             
+            
             default:{
                 std::cout<< "输入错误，请重新输入！"<< std::endl;
                 break;
