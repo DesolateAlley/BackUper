@@ -362,7 +362,62 @@ int main(){
                 break;
             }
              
-            
+            ////**** 加密解密
+            case 13:{   // 加密备份
+                std::cout << "请输入需要加密的文件"<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK)) std::cout << "当前文件不存在，请检查后后重新输入"<<std::endl;
+                else{
+                    std::string md5, md5md5;
+                    Encrypter encrypter;
+                    password = encrypter.getPSWD();
+                    md5 = encrypter.encode(password);
+                    md5md5 = encrypter.encode(md5);
+                    std::cout << "请输入存放加密文件的目录："<<std::endl;
+                    getline(std::cin, targetDir);
+                    if (access(targetDir.c_str(), F_OK)){
+                        char flag;
+                        std::cout << "当前目标父目录不存在，是否需要直接创建新目录"<<std::endl
+                            << "若是请输入y/Y,其他任意键退出"<<std::endl;
+                        std::cin >> flag;
+                        if (flag == 'y' || flag == 'Y'){
+                            filetool.mkDir(targetDir);
+                        }
+                        else  break;
+                    }
+                    encrypter.encyptFile(md5, md5md5, sourceDirOrFile, targetDir);
+                }
+                break;
+            }
+            case 14:{   // 解密文件
+                std::cout << "请输入需要解密的文件"<<std::endl;
+                getline(std::cin, sourceDirOrFile);
+                if (access(sourceDirOrFile.c_str(), F_OK)) std::cout << "当前文件不存在，请检查后后重新输入"<<std::endl;
+                else{
+                    std::string md5, md5md5;
+                    Encrypter encrypter;
+                    password = encrypter.getPSWD();
+                    md5 = encrypter.encode(password);
+                    md5md5 = encrypter.encode(md5);
+                    std::cout << "请输入存放解密文件的目录："<<std::endl;
+                    getline(std::cin, targetDir);
+                    if (access(targetDir.c_str(), F_OK)){
+                        char flag;
+                        std::cout << "当前目标父目录不存在，是否需要直接创建新目录"<<std::endl
+                            << "若是请输入y/Y,其他任意键退出"<<std::endl;
+                        std::cin >> flag;
+                        if (flag == 'y' || flag == 'Y') filetool.mkDir(targetDir);
+                        else  break;
+                    }
+                    encrypter.decryptFile(md5, md5md5, sourceDirOrFile, targetDir);
+                }
+                break;
+            }
+          
+            case 15:{   // 退出系统 
+                std::cout << "exit successfully!" << std::endl;
+                break;
+            }            
             default:{
                 std::cout<< "输入错误，请重新输入！"<< std::endl;
                 break;
