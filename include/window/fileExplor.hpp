@@ -16,6 +16,7 @@ class FileExplorer : public QWidget {
 
  public:
     QString  curViewPath;
+    QString  curSelectedFile ;
 
     FileExplorer(const QString &directoryPath , QWidget *parent = nullptr) ;  //  : QWidget(parent)
     ~FileExplorer(){};

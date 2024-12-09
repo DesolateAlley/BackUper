@@ -23,4 +23,10 @@
 #include <QDebug>
 
 
+#include <QStandardItemModel>
+#include <QFile>
+#include <QTextStream>
+#include <QStringList>
+#include <QHeaderView>
+
 #endif

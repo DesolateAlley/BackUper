@@ -95,7 +95,6 @@ bool FileTools::EmptyDir(std::string dirName){
 
 
 
-
 /*
 // 递归复制目录函数，便于备份目录时调用
 // 此处sourceDir相当于子目录，targetDir相当于父目录
@@ -257,3 +256,87 @@ bool FileTools::rmDirOrFile(std::string tgtName, bool ifconfirm){
 // }
 
 
+
+
+
+std::string FileTools:: getCurrentTimeString() {
+    // 获取当前时间点
+    auto now = std::chrono::system_clock::now();
+    
+    // 转换为 time_t 类型的时间（即日历时间）
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    
+    // 转换为本地时间并格式化
+    std::tm localTime = *std::localtime(&now_time);
+    
+    // 使用 stringstream 进行格式化
+    std::ostringstream timeStream;
+    timeStream << std::put_time(&localTime, "%Y-%m-%d-%H:%M:%S"); // 年-月-日-时-分
+    return timeStream.str();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// BackUpInfo 的构造函数,根据 BackUpInfo(file) 读取的一行字符串初始化
+BackUpInfo::BackUpInfo( std::string line ){
+	std::vector<std::string> parts = this->split(line , "////");
+	if(parts.size()!=5){
+		std::cout<<"BackUpInfo文件读取错误!"<<std::endl;
+		exit(0);
+	}
+	this->filename = parts[0];
+	this->inode = parts[1];
+	this->devno = parts[2];
+	this->path = parts[3];
+	this->BURename = parts[4];
+}
+
+// 将字符串按照 delimiter 划分
+std::vector<std::string> BackUpInfo:: split(const std::string& str, const std::string& delimiter) {
+    std::vector<std::string> tokens;
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+
+    while (end != std::string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delimiter.length();
+        end = str.find(delimiter, start);
+    }
+    tokens.push_back(str.substr(start)); // 处理最后一个部分
+
+    return tokens;
+}
+
+// 将类属性转化成 BackUpInfo(file) 的一行格式 : //文件名////文件inode(st_ino)////文件设备号////源路径 
+std::string BackUpInfo:: to_string(){
+	return this->filename+"////"+this->inode+"////"+this->devno+"////"+this->path+"////"+this->BURename ;
+}	
+
+bool BackUpInfo:: isSameFile(const BackUpInfo& other) const {
+    return (this->inode == other.inode)&&(this->devno == other.devno) ; // 根据需要修改属性比较
+}
+
+std::unique_ptr<BackUpInfo> BackUpInfo:: findSameInVec( std::vector<std::unique_ptr<BackUpInfo>> vec) {
+	// 迭代
+    for (auto it = vec.begin(); it != vec.end();it++) {
+        if(this->isSameFile(*it->get())){
+			//是同一个文件，返回该ptr
+			return std::move(*it);
+		}
+    }
+	return nullptr ;
+}

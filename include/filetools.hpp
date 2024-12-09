@@ -17,13 +17,21 @@
 #include <sys/types.h>
 #include <errno.h>
 
+#include <optional>
+#include <random>
 #include <time.h>
 #include <string.h>
 #include <string>
 #include <bitset>
 #include <vector>
+#include <memory>
 #include <queue>
 #include <map>
+
+#include <iomanip>
+#include <chrono>
+#include <ctime>
+#include <sstream>
 
 #define BUFFER_SIZE 1024
 
@@ -51,6 +59,36 @@ class FileTools{
 	
 	// 删除目录或者文件
 	bool rmDirOrFile(std::string dirPathName  , bool ifconfirm = true);			  
+
+	// 获取系统时间
+	static std::string getCurrentTimeString();
+	
+
+};
+
+class BackUpInfo{
+ public:
+	//文件名////文件inode(st_ino)////文件设备号////源路径///备份后的文件夹别名
+	std::string filename ; 
+	std::string inode ;
+	std::string devno ;
+	std::string path ;
+	std::string BURename ; 
+
+	BackUpInfo( std::string filename ,std::string inode , std::string devno , std::string path, std::string BURename) : 
+		filename(filename), inode(inode), devno(devno), path(path) , BURename(BURename)  {}
+	BackUpInfo( std::string filename ,std::string inode , std::string devno , std::string path ) : 
+		filename(filename), inode(inode), devno(devno), path(path){}
+	BackUpInfo( std::string line );
+	BackUpInfo(){}
+	std::vector<std::string> split(const std::string& str, const std::string& delimiter);
+
+	std::string to_string();
+
+	// 自定义的比较函数
+    bool isSameFile(const BackUpInfo& other) const ;
+
+std::unique_ptr<BackUpInfo> findSameInVec( std::vector<std::unique_ptr<BackUpInfo>> vec) ;
 
 };
 

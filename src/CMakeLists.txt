@@ -12,6 +12,9 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/pack/pack.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/window/fileExplor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/window/mainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/window/restoreFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/window/backupedView.cpp
+
 )
 
 # 将src中的源文件添加到项目
@@ -19,8 +22,16 @@ set(SOURCES
 
 # 设置头文件
 set(HEADER_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/fileExplor.hpp  # include目录下的头文件
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/AllQtHead.hpp  # include目录下的头文件
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/filetools.hpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/backuper/backuper.hpp   
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/pack/pack.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/fileExplor.hpp   
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/mainWindow.hpp   
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/restoreFile.hpp   
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/backupedView.hpp   
+
+
 )
  
 # 定义可执行文件Backuper，添加源文件和头文件

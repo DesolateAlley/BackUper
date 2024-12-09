@@ -1,5 +1,205 @@
 #include "../../include/backuper/backuper.hpp"
- 
+
+
+// 生成指定长度的随机字符串
+std::string  Backuper:: getRandomString(size_t length) {
+    const char characters[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    std::string result;
+    result.reserve(length);
+
+    // 使用随机数生成器
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<size_t> distribution(0, sizeof(characters) - 2); // -2 to ignore null terminator
+
+    for (size_t i = 0; i < length; ++i) {
+        result += characters[distribution(generator)];
+    }
+    return result;
+}
+
+// 读取备份存储目录的 BackUpInfo 文件 ,并返回以及备份的文件信息列表
+std::optional<std::vector< std::unique_ptr<BackUpInfo> > > Backuper:: readBUInfo(std::string path){
+    std::ifstream inputFile(path);
+    if (!inputFile.is_open()) {
+        std::cerr << "Unable to open file: " << path << std::endl;
+        // QMessageBox::information(nullptr, "Error", "Unable to open file:"+QString::fromStdString(path)); 
+        return std::nullopt; // 表示失败
+    }
+
+    std::vector< std::unique_ptr<BackUpInfo> > buInfos ;
+    std::string line;
+    while (std::getline(inputFile, line)) {
+        // 处理每一行
+        // std::cout << line << std::endl;
+        std::unique_ptr<BackUpInfo> buInfo =std::make_unique<BackUpInfo>();
+        std::vector<std::string> parts = buInfo->split(line , "////");
+        if(parts.size()!=5){
+            std::cout<<"BackUpInfo文件读取错误!"<<std::endl;
+            return std::nullopt; // 表示失败
+        }
+        buInfo->filename = parts[0];
+        buInfo->inode = parts[1];
+        buInfo->devno = parts[2];
+        buInfo->path = parts[3];
+        buInfo->BURename = parts[4]; 
+        buInfos.push_back(std::move(buInfo));
+    }
+
+    inputFile.close(); // 关闭文件
+
+    return buInfos;
+
+}
+
+// 将新备份的文件info追加入 BackUpInfo
+bool Backuper::addToFile(std::string path , std::string data){
+    // 创建输出文件流并以追加模式打开
+    std::ofstream outFile(path, std::ios::app);
+    if (!outFile) {
+        std::cerr << "Error opening file: " << path << std::endl;
+        return false;
+    }
+    // 追加数据并换行
+    outFile << data << std::endl;
+    // 文件流关闭
+    outFile.flush(); // 刷新输出流
+    outFile.close();
+    return true;
+}
+
+// 获取指定文件的内容行数，不做文件类型检查，因为用于备份记录，一定是普通文件
+int Backuper::getFileLine(std::string filepath){
+    std::ifstream inputFile(filepath);
+    if (!inputFile.is_open()) {
+        return -1; 
+    }
+    std::string line ;
+    int lineNum=0;
+    while (std::getline(inputFile,line ))lineNum++;
+    inputFile.close();
+    return  lineNum;
+}
+
+// 备份文件, 备份到默认路径 DefaultBackupPath 
+bool Backuper::backupFile(std::string sourceFile  ) {
+    // std::cout<<"sb"+sourceFile+DefaultBackupPath<<std::endl; 
+    std::string BUInfoFilePath = DefaultBackupPath + "/BackUpInfo" ;
+    //// 判断该文件之前是否备份过,若备份过,在原备份记录上新增备份点
+    // 首先获取 sourceFile 的文件信息 , 构建 BackUpInfo 类
+    struct stat srcbuf;
+    stat(sourceFile.c_str(), &srcbuf);
+    std::unique_ptr<BackUpInfo> sourceFileInfo =std::make_unique<BackUpInfo>(sourceFile.substr(sourceFile.find_last_of("/\\") + 1) , 
+                                                        std::to_string(srcbuf.st_ino), std::to_string(srcbuf.st_dev) , sourceFile);
+    
+    // 读取 BUInfoFilePath : /home/cl/Desktop/Backup_King/BackupDir/ + BackUpInfo 内容
+    auto resultOpt = this->readBUInfo(BUInfoFilePath) ;
+    if(!resultOpt)return false ; 
+    std::vector< std::unique_ptr<BackUpInfo> > BUInfos = std::move(*resultOpt) ;
+    // 获取 所有已备份文件的备份文件夹重命名
+    std::vector<std::string> AllRename ; 
+    for (const auto& ptr:BUInfos ) AllRename.push_back(ptr->BURename) ;
+
+    // 查找 sourceFileInfo 是否在 BUInfos 里，即是否备份过
+    std::unique_ptr<BackUpInfo> findRecord  = sourceFileInfo->findSameInVec(std::move(BUInfos)) ;
+    
+    std::string BUFilePath ; // 待备份文件自己的备份存储文件夹
+    if (findRecord == nullptr) {  // 没找到，说明该文件是第一次备份
+        // BackUpInfo行内容:   文件名////文件inode(st_ino)////文件设备号////源路径////备份重命名
+        // 首先在 BackUpInfo 里面写入新的记录，但是此时还有一个属性未定义(UPRename)，在备份目录 DefaultBackupPath 里新开一个自己的备份文件夹 ，这个文件夹名要避免重名
+        // 查看本文件的filename在AllRename中有无重名，若有，则需要更改，更改的规则是加在filename文件名后加一个6位的字符串，其内容为字母或数字随机排列
+        if(std::find(AllRename.begin() , AllRename.end() , sourceFileInfo->filename )!=AllRename.end()){
+            // 有命名冲突
+            sourceFileInfo->BURename = sourceFileInfo->filename + this->getRandomString();
+        }else sourceFileInfo->BURename = sourceFileInfo->filename ; // 没有命名冲突直接用原名即可
+        if(this->addToFile(BUInfoFilePath , sourceFileInfo->to_string())==false){ // 写入失败
+            std::cout<<"备份文件信息写入BackUpInfo失败"<<std::endl;
+            return false ;
+        }
+        // BackUpInfo已经写入记录 ， 下面在/home/cl/Desktop/Backup_King/BackupDir/BackUpFiles 里新建其重命名的BURename文件夹
+        BUFilePath = DefaultBackupPath + "/BackUpFiles/" + sourceFileInfo->BURename ;
+        FileTools filetool ;
+        filetool.mkDir(BUFilePath); 
+        // 在BUFilePath新建一个备份记录文件 BackUpRecord.hwcq307,用于记录该文件的每次备份
+        // 打开文件并使用 trunc 模式清空内容
+        std::ofstream outFile(BUFilePath+ "/"+DefaultBackupRecord , std::ios::trunc);
+        if (!outFile) {
+            std::cerr << "Error creating file: " << BUFilePath + DefaultBackupRecord << std::endl;
+            return false;
+        }
+        outFile.close(); // 关闭文件
+        
+    } else { // 找到了记录，说明该文件不是第一次备份了 ,在原备份记录上新增备份点
+        // std::cout<<"end"<<std::endl;
+        BUFilePath = DefaultBackupPath + "/BackUpFiles/" + findRecord->BURename ;
+        sourceFileInfo ->BURename = findRecord->BURename;
+    }
+
+    // 不管找不找到，到这的都是对 sourceFileInfo 进行备份，备份的路径是 BUFilePath , 但是还要知道当前是第几备份点，要查看 备份记录文件 BackUpRecord.hwcq307
+    int recordNum= this->getFileLine(BUFilePath +"/" + DefaultBackupRecord) ;
+    if(recordNum<0){ // 读取文件失败
+        std::cerr << "Unable to open file: " << BUFilePath + DefaultBackupRecord << std::endl;
+        return false; 
+    }
+    std::string BUVersion = sourceFileInfo ->BURename + "V" + std::to_string(recordNum) ;
+    // 先写备份记录文件 其内容为每行是一条备份记录： 备份时的文件名////当前备份的备份文件名（UPRenameVi）////备份时间////备份时的路径
+    std::string wdata = sourceFileInfo->filename +"////" + BUVersion+"////" + FileTools::getCurrentTimeString() + "////" +sourceFile  ;
+    
+    // 下面进行备份
+    if(this->backupAllFileKinds(sourceFile  , BUFilePath + "/" +BUVersion )){
+        this->addToFile(BUFilePath +"/" + DefaultBackupRecord ,  wdata) ;
+        return true;    
+    }   
+    return false;
+
+}
+
+// 具体备份文件的方法，将 sourcefile 的文件备份到 targetfile 
+bool Backuper::backupAllFileKinds(std::string sourcefile, std::string targetfile){
+    struct stat srcbuf;
+    stat(sourcefile.c_str(), &srcbuf);
+    if (S_ISDIR(srcbuf.st_mode)){   //目录文件
+        if (backupDir(sourcefile, targetfile)){
+            std::cout << sourcefile << "备份成功！"<<std::endl;
+            return true;
+        }
+    }else if (S_ISREG(srcbuf.st_mode)){     // 普通文件
+        if (backupRegFile(sourcefile, targetfile)){
+            std::cout << sourcefile << "备份成功！"<<std::endl;
+            return true;
+        }
+    }else if (S_ISLNK(srcbuf.st_mode)){     //软链接文件
+        if (backupSymLINK(sourcefile, targetfile)){
+            std::cout << sourcefile << "备份成功！"<<std::endl;
+            return true;
+        }
+    }else if (S_ISFIFO(srcbuf.st_mode)){    //管道文件
+        if (backupFIFO(sourcefile, targetfile)){
+            std::cout << sourcefile << "备份成功！"<<std::endl;
+            return true;
+        }
+    }else   std::cout << "非常抱歉！当前系统不支持该文件类型"<<std::endl;
+    
+    return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // 备份器的普通文件复制函数实现,sourcefile为源文件名，targetfile为目标文件名
@@ -14,23 +214,28 @@ bool Backuper::backupRegFile(std::string sourceFile, std::string targetFile){
 
 	// 若以只读方式打开源文件失败则返回
 	if ((fin = open(sourceFile.c_str(), O_RDONLY)) < 0){  //O_RDONLY：以只读方式打开文件,定义在<fcntl.h>中
-		return false;
+		std::cout<<"sadasds13\n";    
+        std::cout<<"打开源文件失败"<<std::endl;
+        return false;
 	}
 	// 用 fstat() 获取源文件的状态信息并存储在 sbuf 结构体中。若获取源文件状态信息失败，关闭文件并返回
 	if (fstat(fin, &sbuf) < 0){
 		close(fin);
+        std::cout<<"获取源文件状态失败"<<std::endl;
 		return false;
 	}
 	// 以读写模式(O_RDWR)创建(O_CREAT)/打开目标文件，并设置初始权限为 0644(创建文件支持携带路径) , 若创建目标文件失败直接返回 
 	// 注意此处采用 O_TRUNC , 如果目标文件存在，将会被覆盖
 	if ((fout = open(targetFile.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644)) < 0){
 		close(fin);// 退出要关闭文件描述符
+        std::cout<<"打开备份存储目标文件失败"<<std::endl;
 		return false;
 	}
 	// 使用 ftruncate() 为目标文件分配与源文件相同的空间大小。 若无法给目标文件分配与源文件同样大小的空间则关闭文件并返回
 	if (ftruncate(fout, sbuf.st_size) < 0){
 		close(fin);
 		close(fout);
+        std::cout<<"为目标文件分配与源文件相同的空间大小失败"<<std::endl;
 		return false;
 	}
 	// 通过内存映射的方式实现文件复制，每次只最多复制1GB
@@ -49,11 +254,13 @@ bool Backuper::backupRegFile(std::string sourceFile, std::string targetFile){
 				// fin: 源文件的文件描述符。// fsz: 映射的起始偏移量，表示从源文件的这个位置开始映射。
 			close(fin);
 			close(fout);
+            std::cout<<"将源文件映射到虚拟内存失败"<<std::endl;
 			return false;
 		}
 		if ((dst = mmap(0, copysz, PROT_READ | PROT_WRITE, MAP_SHARED, fout, fsz)) == MAP_FAILED){
 			close(fin);
 			close(fout);
+            std::cout<<"将目标文件映射到虚拟内存失败"<<std::endl;
 			return false;
 		}
 		
@@ -152,6 +359,7 @@ bool Backuper::backupFIFO(std::string sourcefile, std::string targetfile){
     return true;
 }
 
+/*
 // 递归备份目录，sourceDir为源目录，targetDir为目标父目录
 bool Backuper::backupDir(std::string sourceDir, std::string targetDir){
     DIR *srcDir;
@@ -222,6 +430,62 @@ bool Backuper::backupDir(std::string sourceDir, std::string targetDir){
     utimensat(AT_FDCWD, tgtPath.c_str(), times, 0);
     return true;
 }
+*/
+
+// 递归备份目录，sourceDir为源目录，targetDir为目标目录
+bool Backuper::backupDir(std::string sourceDir, std::string targetDir){
+    DIR *srcDir;
+    struct dirent *srcDirEntry;
+    struct stat srcBuff;
+    std::string filename;
+    struct timespec times[2]; // 存储源目录的时间信息
+    
+    mkDir(targetDir, srcBuff.st_mode);
+    if ((srcDir = opendir(sourceDir.c_str())) == NULL){
+        // 打开目录失败，返回失败信息
+        fprintf(stderr, "无法打开源目录，请检查后重试 %s\n", targetDir.c_str());
+        return false;
+    }
+    // 循环备份目录
+    while ((srcDirEntry = readdir(srcDir)) != NULL){
+        filename = sourceDir + '/' + srcDirEntry->d_name;
+        lstat(filename.c_str(), &srcBuff);
+        if (strcmp(srcDirEntry->d_name, ".") == 0 || strcmp(srcDirEntry->d_name, "..") == 0)
+            continue;
+        if (S_ISDIR(srcBuff.st_mode)){ //子目录是一个文件夹，递归调用复制
+            if (!backupDir(filename, targetDir)){
+                std::cout << "递归复制失败" << std::endl;
+                return false;
+            }
+        }else if (S_ISREG(srcBuff.st_mode)){ //子目录是一个普通文件
+            if (!backupRegFile(filename, targetDir + '/' + srcDirEntry->d_name)){
+                std::cout << "复制文件失败" << std::endl;
+                return false;
+            }
+        }else if (S_ISFIFO(srcBuff.st_mode)){ //子目录是一个管道文件
+            if (!backupFIFO(filename, targetDir + '/' + srcDirEntry->d_name)){
+                std::cout << "复制文件失败" << std::endl;
+                return false;
+            }
+        }else if (S_ISLNK(srcBuff.st_mode)){ //子目录是一个软链接文件
+            if (!backupSymLINK(filename, targetDir + '/' + srcDirEntry->d_name)){
+                std::cout << "复制文件失败" << std::endl;
+                return false;
+            }
+        }else{
+            std::cout << "该文件不是本系统支持的文件类型，不予复制" << std::endl;
+        }
+    }
+    closedir(srcDir);
+    // 基于原始数据修该备份后的目录文件元数据
+    stat(sourceDir.c_str(), &srcBuff);
+    times[0] = srcBuff.st_atim;
+    times[1] = srcBuff.st_mtim;
+    chmod(targetDir.c_str(), srcBuff.st_mode);
+    chown(targetDir.c_str(), srcBuff.st_uid, srcBuff.st_gid);
+    utimensat(AT_FDCWD, targetDir.c_str(), times, 0);
+    return true;
+}
 
 // 兼容性备份，sourcefile为源文件或目录，targetfile为目标父目录
 bool Backuper::backupAllFile(std::string sourcefile, std::string targetdir){
@@ -230,7 +494,7 @@ bool Backuper::backupAllFile(std::string sourcefile, std::string targetdir){
     strcpy(path, sourcefile.c_str());
     std::string targetfilename = targetdir + '/' + basename(path);
     stat(sourcefile.c_str(), &srcbuf);
-    if (S_ISDIR(srcbuf.st_mode)){ //目录文件
+    if (S_ISDIR(srcbuf.st_mode)){   //目录文件
         if (backupDir(sourcefile, targetdir)){
             std::cout << sourcefile << "备份成功！"<<std::endl;
             return true;
@@ -255,8 +519,6 @@ bool Backuper::backupAllFile(std::string sourcefile, std::string targetdir){
     return false;
 }
 
-
-
 // 支持特殊文件类型的文件或目录移动函数
 bool Backuper::ADmoveFileOrDir(std::string source, std::string target){
     if (backupAllFile(source, target)){
@@ -270,8 +532,6 @@ bool Backuper::ADmoveFileOrDir(std::string source, std::string target){
 
     return false;
 }
-
-
 
 // 列举给定路径下的文件(包括目录和具体文件)
 std::vector<std::string> Backuper::listFilesInDirectory(const std::string& path) {
@@ -293,7 +553,6 @@ std::vector<std::string> Backuper::listFilesInDirectory(const std::string& path)
 
     return files;
 }
-
 
 // 比较两个目录中的文件列表的函数
 void Backuper::compareDirectories(const std::string& dir1, const std::string& dir2) {
