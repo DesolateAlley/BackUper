@@ -3,10 +3,9 @@
 #include "../AllQtHead.hpp" //所有的Qt头文件
 
 #include "../../include/window/fileExplor.hpp"
-#include "../../include/window/restoreFile.hpp"
+#include "../../include/window/restoreFileWindow.hpp"
 
 #include "../../include/backuper/backuper.hpp"
-#include <string>
 
 
 extern QString viewDirPath;

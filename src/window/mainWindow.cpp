@@ -103,13 +103,11 @@ void MainWindow::backupButtonClicked() {
         QMessageBox::warning(nullptr, "Notice", "No file selected.\n未选中文件."); 
     }else{
         // 得到了需要备份的文件 string SelectedFile
-        Backuper backuper;
-        if(backuper.backupFile(SelectedFile))QMessageBox::information(nullptr,"Notice", QString::fromStdString(SelectedFile.substr(SelectedFile.find_last_of("/\\") + 1 ) )+" Backup successfully.\n备份成功."); 
+        if(Backuper::backupFile(SelectedFile))QMessageBox::information(nullptr,"Notice", QString::fromStdString(SelectedFile.substr(SelectedFile.find_last_of("/\\") + 1 ) )+" Backup successfully.\n备份成功."); 
         else QMessageBox::warning(nullptr, "Notice", QString::fromStdString(SelectedFile.substr(SelectedFile.find_last_of("/\\") + 1 ) )+" Backup failed.\n备份失败."); 
           
     }
     // 调用函数 ,输入选中文件的路径
-
 }
 
 // 查看备份文件按钮点击

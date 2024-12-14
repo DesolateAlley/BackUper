@@ -1,4 +1,4 @@
-#include "../../include/window/restoreFile.hpp"
+#include "../../include/window/restoreFileWindow.hpp"
 
 
 RestoreWindow::RestoreWindow(QWidget *parent ) : QWidget(parent) {
@@ -47,14 +47,14 @@ RestoreWindow::RestoreWindow(QWidget *parent ) : QWidget(parent) {
 }
 
 void RestoreWindow::viewButtonClicked(){
-    // 选中的文件名 this->backupedViewer->selectRenameFir ;
-    // QMessageBox::information(this, "Selected Row Data", "You selected: " + this->backupedViewer->selectRenameFir);
+    // 选中的文件名 this->backupedViewer->selectRenameDir ;
+    // QMessageBox::information(this, "Selected Row Data", "You selected: " + this->backupedViewer->selectRenameDir);
 
-    QString  viewDirPath = QString::fromStdString(DefaultBackupPath + "/BackUpFiles") +"/"+ this->backupedViewer->selectRenameFir ;
+    QString  viewDirPath = QString::fromStdString(DefaultBackupPath + "/BackUpFiles") +"/"+ this->backupedViewer->selectRenameDir ;
 
 
     // 实例化新窗口，并显示
-    BackUpVersionViewer *BUVersionViewer = new BackUpVersionViewer( viewDirPath +"/" + QString::fromStdString(DefaultBackupRecord) , this->backupedViewer->selectFirName );
+    BackUpVersionViewer *BUVersionViewer = new BackUpVersionViewer( viewDirPath  , this->backupedViewer->selectDirName );
     BUVersionViewer->show();
 
 

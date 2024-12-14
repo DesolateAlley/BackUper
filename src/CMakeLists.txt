@@ -12,7 +12,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/pack/pack.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/window/fileExplor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/window/mainWindow.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/window/restoreFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/window/restoreFileWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/window/backupedView.cpp
 
 )
@@ -28,7 +28,7 @@ set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/pack/pack.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/fileExplor.hpp   
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/mainWindow.hpp   
-    ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/restoreFile.hpp   
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/restoreFileWindow.hpp   
     ${CMAKE_CURRENT_SOURCE_DIR}/../include/window/backupedView.hpp   
 
 
