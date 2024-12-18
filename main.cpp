@@ -1,10 +1,9 @@
 #include "./include/AllQtHead.hpp" //所有的Qt头文件
-
-#include "./include/window/fileExplor.hpp"
+#include "./include/filetools.hpp"
 #include "./include/window/mainWindow.hpp"
 
- 
-QString viewDirPath="/home/cl/Desktop/Backup_King/testFiles" ;
+QString viewDirPath = "/home/cl/Desktop/Backup_King/testFiles" ;
+
 
 // 默认的备份文件存储路径
 std::string DefaultBackupPath = "/home/cl/Desktop/Backup_King/BackupDir" ;   //暂不支持自定义
@@ -15,6 +14,8 @@ std::string DefaultBackupPath = "/home/cl/Desktop/Backup_King/BackupDir" ;   //�
 // 每个文件备份文件夹里的记录，用于记录每次备份的信息
 std::string DefaultBackupRecord = "BackUpRecord.hwcq307" ;
 
+//打包时加的默认后缀
+std::string  packSuffix = ".HWCQpack";
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);

@@ -2,13 +2,14 @@
 #define MAINWINDOW_HPP
 #include "../AllQtHead.hpp" //所有的Qt头文件
 
-#include "../../include/window/fileExplor.hpp"
-#include "../../include/window/restoreFileWindow.hpp"
+#include "./fileExplor.hpp"
+#include "./restoreFileWindow.hpp"
 
-#include "../../include/backuper/backuper.hpp"
+#include "../backuper/backuper.hpp"
+#include "../../include/pack/pack.hpp"
 
 
-extern QString viewDirPath;
+
 
 class MainWindow : public QWidget {
  public:
@@ -32,12 +33,11 @@ class MainWindow : public QWidget {
     void encryptButtonClicked();
     // 解密按钮点击    
     void decryptButtonClicked();
+    // 删除文件按钮点击
+    void deleteButtonClicked();
+    // 检查文件名是否合法
+    bool isValidFileName(const QString &fileName);
 };
-
-
-
- 
-  
   
 
 

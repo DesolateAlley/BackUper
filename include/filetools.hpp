@@ -47,6 +47,9 @@ extern std::string DefaultBackupInfo ;
 // 每个文件备份文件夹里的记录，用于记录每次备份的信息
 extern std::string DefaultBackupRecord ;
 
+//打包时加的默认后缀
+extern std::string  packSuffix ;
+
 class FileTools{
  public:
 	FileTools(){};  
@@ -63,7 +66,7 @@ class FileTools{
 	static bool mkDir(std::string dirPathName, mode_t mode = 0755);	
 	//bool moveDir(std::string sourceDir, std::string targetDir); // 移动目录到指定目录下
 	// 删除目录或者文件
-	static bool rmDirOrFile(std::string dirPathName  , bool ifconfirm = true);			  
+	static bool rmDirOrFile(std::string dirPathName  , bool ifconfirm = false);			  
 
 
 

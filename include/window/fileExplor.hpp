@@ -2,8 +2,6 @@
 #define FILEEXPLOR_HPP
 #include "../AllQtHead.hpp" //所有的Qt头文件
 
-extern QString viewDirPath;
-
 class FileExplorer : public QWidget {
     Q_OBJECT
  private:

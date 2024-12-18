@@ -2,8 +2,6 @@
 # 查找Qt5的Widgets模块（如果在主目录已查找，可省略此行）
 find_package(Qt5Widgets REQUIRED)
 # 添加子模块
-# add_subdirectory(backuper)
-# add_subdirectory(pack)
  
 # 设置src中的源文件
 set(SOURCES

@@ -245,7 +245,7 @@ QString checkPath(const QString &path){
         // 文件名是否有重名
     QString fileName = QFileInfo(path).fileName();  // 获取文件名
     // 如果文件名已经存在
-    while (dir.exists(fileName)) {
+    while (!isValidFileName(fileName) || dir.exists(fileName)) {
         // 弹出对话框让用户重命名
         bool ok;
         QString newFileName = QInputDialog::getText(nullptr, "File Exists", 
@@ -257,7 +257,6 @@ QString checkPath(const QString &path){
             if (isValidFileName(newFileName)) {
                 fileName = newFileName;  // 更新文件名
                 returnPath = dir.absoluteFilePath(fileName);  // 更新完整的路径
-                break ;
             } else {
                 QMessageBox::warning(nullptr, "Invalid Filename", "The filename contains invalid characters like '/' or other forbidden characters.");
                 continue;  // 继续让用户重新输入

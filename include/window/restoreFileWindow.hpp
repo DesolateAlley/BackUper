@@ -3,7 +3,7 @@
 #include "../AllQtHead.hpp" //所有的Qt头文件
 
 
-#include "../../include/window/backupedView.hpp"
+#include "./backupedView.hpp"
 
 
 class RestoreWindow : public QWidget {

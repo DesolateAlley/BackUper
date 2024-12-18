@@ -4,14 +4,7 @@
 
 #include "../filetools.hpp"
 
-// 默认的备份文件存储路径
-extern std::string DefaultBackupPath ;
 
-// 记录不同文件的备份信息，用于区分每次备份的是不是已经备份过，以及区分不同文件的备份
-extern std::string DefaultBackupInfo ;
-
-// 每个文件备份文件夹里的记录，用于记录每次备份的信息
-extern std::string DefaultBackupRecord ;
 
 
 class Backuper : public FileTools{

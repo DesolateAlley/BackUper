@@ -1,5 +1,7 @@
 #include "../../include/pack/pack.hpp"
 
+std::string Packer::packDirName = "";  // 初始化为合适的默认值
+
 // 获取目录 dirname 的大小
 long long int Packer::getDirSize(std::string dirname){
 	DIR *dp;
@@ -7,27 +9,23 @@ long long int Packer::getDirSize(std::string dirname){
 	struct stat statbuf;
 	std::string subdir;
 	long long int totalSize = 0;
-	if ((dp = opendir(dirname.c_str())) == NULL)
-	{
+	if ((dp = opendir(dirname.c_str())) == NULL){
 		fprintf(stderr, "Cannot open dir: %s\n", dirname.c_str());
 		return -1; // 可能是个文件，或者目录不存在
 	}
 	// 先加上自身目录的大小
 	lstat(dirname.c_str(), &statbuf);
 	totalSize += statbuf.st_size;
-	while ((entry = readdir(dp)) != NULL)
-	{
+	while ((entry = readdir(dp)) != NULL){
 		if (strcmp(".", entry->d_name) == 0 || strcmp("..", entry->d_name) == 0)
 			continue;
 		subdir = dirname + '/' + entry->d_name;
 		lstat(subdir.c_str(), &statbuf);
-		if (S_ISDIR(statbuf.st_mode))
-		{
+		if (S_ISDIR(statbuf.st_mode)){
 			long long int subDirSize = getDirSize(subdir);
 			totalSize += subDirSize;
 		}
-		else
-		{
+		else{
 			totalSize += statbuf.st_size;
 		}
 	}
@@ -46,7 +44,9 @@ headblock *Packer::genHeader(std::string filename){
 	std::string mtimesecstring, mtimensecstring;
 	char sylinkname[100];
 	// 存储文件名
-	strcpy(head->name, filename.c_str());
+	std::string storeFilename = "/."+filename.substr(filename.find(packDirName)+packDirName.length()) ;
+	// std::cout<<storeFilename<<std::endl;
+	strcpy(head->name, storeFilename.c_str());
 	// 存储文件st_mode,事实上已经包含用户权限和文件类型
 	strcpy(head->mode, (std::to_string(srcbuf.st_mode)).c_str());
 	// 存储用户ID
@@ -150,7 +150,7 @@ bool Packer::packDir(std::string sourcedir, std::string targetbag){
 	headblock *head;
 	char flag[BLOCKSIZE] = {'\0'};
 	// 使用 open 函数创建并打开目标文件 targetbag。打开模式为 O_RDWR可读可写; O_CREAT文件不存在时创建文件; O_TRUNC清空文件内容; O_APPEND追加写入文件; 文件权限设置为 0644，表示文件拥有者可读写，其他用户只读。
-	targetbag += ".bo";
+	targetbag += packSuffix;
 	if ((fout = open(targetbag.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644)) < 0){
 		return false;
 	}
@@ -159,17 +159,20 @@ bool Packer::packDir(std::string sourcedir, std::string targetbag){
 		fprintf(stderr, "Can`t open directory %s\n", sourcedir.c_str());
 		return false;
 	}
-
+	packDirName = sourcedir.substr(sourcedir.find_last_of("/")+1) ;
 	// 打包文件
 	if (addFileToBag(sourcedir, fout)){
+	// if (addFileToBag("/."+ sourcedir.substr(sourcedir.find_last_of("/")) , fout)){
 		write(fout, flag, BLOCKSIZE); //使用 write 函数向目标文件写入 flag 填充块，以满足文件对齐或结尾标记。
 		close(fout);
 		std::cout << "打包成功！"<<std::endl;
+		packDirName = "";
 		return true;
 	}
 	
 	close(fout);
 	std::cout << "打包失败!"<<std::endl;
+	packDirName = "";
 	return false;
 }
 
@@ -237,10 +240,8 @@ bool Packer::turnBagToFile(int sourcebag, std::string targetdir){
 // 解包，将打包后的.bo文件(sourcebag)解包到目录(targetdir)
 bool Packer::unpackBag(std::string sourcebag, std::string targetdir){
 	// 先简单校验是否为.bo文件
-	int len;
 	int fin;
-	len = strlen(sourcebag.c_str());
-	if (sourcebag[len - 2] != 'b' || sourcebag[len - 1] != 'o'){
+	if ( sourcebag.substr(sourcebag.find_last_of('.'))!= packSuffix ){
 		std::cout << "当前解包文件格式不符，退出解包！"<<std::endl;
 		return false;
 	}else{
