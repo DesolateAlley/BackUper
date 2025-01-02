@@ -1,9 +1,9 @@
-#include "../../include/pack/pack.hpp"
+#include "../../include/pack/echoPack.hpp"
 
-std::string Packer::packDirName = "";  // 初始化为合适的默认值
+std::string EchoPack::packDirName = "";  // 初始化为合适的默认值
 
 // 获取目录 dirname 的大小
-long long int Packer::getDirSize(std::string dirname){
+long long int EchoPack::getDirSize(std::string dirname){
 	DIR *dp;
 	struct dirent *entry;
 	struct stat statbuf;
@@ -34,7 +34,7 @@ long long int Packer::getDirSize(std::string dirname){
 }
 
 // 对目标目录或文件生成对应头结点
-headblock *Packer::genHeader(std::string filename){
+headblock *EchoPack::genHeader(std::string filename){
 	int i;
 	struct stat srcbuf;
 	lstat(filename.c_str(), &srcbuf);
@@ -44,7 +44,7 @@ headblock *Packer::genHeader(std::string filename){
 	std::string mtimesecstring, mtimensecstring;
 	char sylinkname[100];
 	// 存储文件名
-	std::string storeFilename = "/."+filename.substr(filename.find(packDirName)+packDirName.length()) ;
+	std::string storeFilename = filename.substr(filename.find(packDirName)+packDirName.length()) ;
 	// std::cout<<storeFilename<<std::endl;
 	strcpy(head->name, storeFilename.c_str());
 	// 存储文件st_mode,事实上已经包含用户权限和文件类型
@@ -61,28 +61,38 @@ headblock *Packer::genHeader(std::string filename){
 	// 存储最近修改时间
 	sprintf(head->mtime_sec, "%ld", srcbuf.st_mtim.tv_sec);
 	sprintf(head->mtime_nsec, "%ld", srcbuf.st_mtim.tv_nsec);
-	// 存储文件类型
-	if (S_ISREG(srcbuf.st_mode)) head->typeflag = '0';
-	if (S_ISLNK(srcbuf.st_mode)){
+
+	//// 存储文件类型
+	if (S_ISREG(srcbuf.st_mode)) head->typeflag = '0';  // 普通文件
+	if (S_ISLNK(srcbuf.st_mode)){ // 符号链接文件
 		head->typeflag = '1';
-		if (readlink(filename.c_str(), sylinkname, srcbuf.st_size) != -1) std::cout << "读取链接成功"<<std::endl;
+		if (readlink(filename.c_str(), sylinkname, srcbuf.st_size) != -1) ; //std::cout << "读取链接成功"<<std::endl;
 		else  perror("link");
+		// 软链接，存放链接路径
+		strcpy(head->linkname, sylinkname);
+		head->linkname[srcbuf.st_size] = '\0';
 	}
-	if (S_ISFIFO(srcbuf.st_mode)) head->typeflag = '2';
-	if (S_ISDIR(srcbuf.st_mode))  head->typeflag = '3'; 
-	// 如果是软链接，存放链接路径
-	strcpy(head->linkname, sylinkname);
-	head->linkname[srcbuf.st_size] = '\0';
+	if (S_ISFIFO(srcbuf.st_mode)) head->typeflag = '2'; // 管道文件
+	if(S_ISCHR(srcbuf.st_mode) || S_ISBLK(srcbuf.st_mode)){ // 设备文件
+		head->typeflag = '3'; 
+		strcpy(head->rdev, (std::to_string(srcbuf.st_rdev)).c_str());
+	} 
+	if(S_ISSOCK(srcbuf.st_mode)) head->typeflag = '4'; // 套接字文件
+	if (S_ISDIR(srcbuf.st_mode))  head->typeflag = '5'; // 文件夹
+
+	
 	// 头结点块标记
 	head->fileflag = '1';
 	// 头结点末尾填零
-	char padd[218] = {'\0'};
+	char padd[170] = {'\0'};
 	stpcpy(head->padding, padd);
 	return head ; 
 }
 
+
+
 // 递归扫描目录时将文件写入 bagfile 中,dirname就是当前要打包的目录
-bool Packer::addFileToBag(std::string dirname, int bagfile){
+bool EchoPack::addFileToBag(std::string dirname, int bagfile){
 	DIR *dp;
 	struct dirent *entry;
 	struct stat statbuf;
@@ -132,7 +142,8 @@ bool Packer::addFileToBag(std::string dirname, int bagfile){
 				write(fout, flag, BLOCKSIZE - statbuf.st_size);
 			}
 			close(fin);
-		}else if (S_ISLNK(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode)){  // 如果是链接文件和管道文件，只保留头结点即可
+		}else if (S_ISLNK(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode) 
+					|| S_ISCHR(statbuf.st_mode)|| S_ISBLK(statbuf.st_mode) || S_ISSOCK(statbuf.st_mode)  ){  // 如果是链接文件和管道文件，只保留头结点即可
 			head = genHeader(filePath);
 			write(fout, head, BLOCKSIZE);
 		}else	std::cout << "抱歉,文件" << filePath << "类型暂不支持！"<<std::endl;
@@ -142,15 +153,14 @@ bool Packer::addFileToBag(std::string dirname, int bagfile){
 	return true;
 }
 
-// 打包文件，调用 addFileToBag 打包源目录，sourcedir为打包源目录，targetbag为打包输出文件，后缀名为bo
-bool Packer::packDir(std::string sourcedir, std::string targetbag){
+// 打包目录文件，调用 addFileToBag 打包源目录，sourcedir为打包源目录，targetbag为打包输出文件，后缀名为bo
+bool EchoPack::packDir(std::string sourcedir, std::string targetbag){
 	DIR *dp;
 	std::string dirPath;
 	int fout;
 	headblock *head;
 	char flag[BLOCKSIZE] = {'\0'};
 	// 使用 open 函数创建并打开目标文件 targetbag。打开模式为 O_RDWR可读可写; O_CREAT文件不存在时创建文件; O_TRUNC清空文件内容; O_APPEND追加写入文件; 文件权限设置为 0644，表示文件拥有者可读写，其他用户只读。
-	targetbag += packSuffix;
 	if ((fout = open(targetbag.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644)) < 0){
 		return false;
 	}
@@ -177,10 +187,70 @@ bool Packer::packDir(std::string sourcedir, std::string targetbag){
 }
 
 
+// 打包文件  //sourcefile是待打包的文件 ， targetbag是包的路径加文件名
+bool EchoPack::packFile(std::string sourcefile, std::string targetbag){
+	// 如果传入的是个目录，那么调用打包目录的
+	if(std::filesystem::is_directory(sourcefile))return packDir(sourcefile , targetbag );
+	//下面是打包非目录文件的
+	int fin,fout;
+	struct dirent *entry;
+	struct stat statbuf;
+	headblock *head;
+	// std::cout << "当前打包" << dirname << std::endl;
+	packDirName = sourcefile.substr(sourcefile.find_last_of("/")+1) ;
+
+	if ((fout = open(targetbag.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644)) < 0){
+		return false;
+	}
+	// 首先写入当前目录的头结点
+	// head = genHeader(sourcefile);
+	// write(fout, head, BLOCKSIZE);
+	char buffer[BLOCKSIZE];
+	char flag[BLOCKSIZE] = {'\0'};
+
+	// 获取源文件元数据信息
+	stat(sourcefile.c_str(), &statbuf);
+	if (S_ISREG(statbuf.st_mode)){	// 如果是普通文件，创建头结点并写入文件内容
+		head = genHeader(sourcefile);
+		write(fout, head, BLOCKSIZE);
+		fin = open(sourcefile.c_str(), O_RDONLY);
+		// 文件比一个块大，才多次读入，否则一次读写即可
+		if (statbuf.st_size > BLOCKSIZE){
+			for (int i = 0; i < (statbuf.st_size / BLOCKSIZE) - 1; i++){
+				read(fin, buffer, BLOCKSIZE);
+				write(fout, buffer, BLOCKSIZE);
+			}
+			// 最后一次读写补零
+			read(fin, buffer, statbuf.st_size % BLOCKSIZE);
+			write(fout, buffer, statbuf.st_size % BLOCKSIZE);
+			write(fout, flag, BLOCKSIZE - statbuf.st_size % BLOCKSIZE); // 末尾补零
+		}else{
+			read(fin, buffer, statbuf.st_size);
+			write(fout, buffer, statbuf.st_size);
+			write(fout, flag, BLOCKSIZE - statbuf.st_size);
+		}
+		close(fin);
+	}else if (S_ISLNK(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode
+				|| S_ISCHR(statbuf.st_mode)|| S_ISBLK(statbuf.st_mode) || S_ISSOCK(statbuf.st_mode)  )){  // 如果是链接文件和管道文件，只保留头结点即可
+		head = genHeader(sourcefile);
+		write(fout, head, BLOCKSIZE);
+	}else{	
+		std::cout << "抱歉,文件" << sourcefile << "类型暂不支持！"<<std::endl;
+		return false;
+	}
+
+	write(fout, flag, BLOCKSIZE); //使用 write 函数向目标文件写入 flag 填充块，以满足文件对齐或结尾标记。
+	std::cout << "打包成功！"<<std::endl;
+	close(fout);
+	packDirName = "";
+	return true;
+
+}
+
 
 
 // 具体拆包函数，sourcebag为源包的文件描述符，targetdir为解包目标目录
-bool Packer::turnBagToFile(int sourcebag, std::string targetdir){
+bool EchoPack::turnBagToFile(int sourcebag, std::string targetdir){
 	timespec times[2];
 	std::string filepath;
 	int fout;
@@ -193,12 +263,14 @@ bool Packer::turnBagToFile(int sourcebag, std::string targetdir){
 		times[0].tv_sec = time_t(atol(head->mtime_sec));
 		times[0].tv_nsec = atol(head->mtime_nsec);
 		times[1] = times[0];
-		filepath = targetdir + '/' + head->name;
+		filepath = targetdir  + head->name;
 		
 		// 解包
 		if (head->typeflag == '0'){		// 读到普通文件的头结点，生成对应普通文件
-			if ((fout = open(filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644)) < 0) return false;
-			
+			if ((fout = open(filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644)) < 0) {
+				std::cout<<filepath+"输出文件打开失败"<<std::endl;	
+				return false;
+			}
 			if (atol(head->size) > BLOCKSIZE){
 				for (int i = 0; i < (atoi(head->size) / BLOCKSIZE) - 1; i++){
 					read(sourcebag, buffer, BLOCKSIZE);
@@ -224,9 +296,19 @@ bool Packer::turnBagToFile(int sourcebag, std::string targetdir){
 				perror("pipe");
 				return false;
 			}
+		}else if(head->typeflag == '3'){ // 设备文件
+			if (mknod(filepath.c_str(), atoi(head->mode), atoi(head->rdev))< 0){
+				perror("dev");
+				return false;
+			}
+		}else if(head->typeflag == '4'){ // 套接字文件
+			if (mknod(filepath.c_str(), S_IFSOCK | (atoi(head->mode) & 07777), 0)){
+				perror("socket");
+				return false;
+			}
 		}else{	  // 文件夹
 			if (mkDir(filepath.c_str(), atoi(head->mode))){
-				std::cout << "成功创建目录" << filepath << std::endl;
+				// std::cout << "成功创建目录" << filepath << std::endl;
 			}else	std::cout << "创建失败"<<std::endl;
 		}
 		// 对应头结点生成对应文件后，设置文件元数据
@@ -237,16 +319,16 @@ bool Packer::turnBagToFile(int sourcebag, std::string targetdir){
 	return true;
 }
 
-// 解包，将打包后的.bo文件(sourcebag)解包到目录(targetdir)
-bool Packer::unpackBag(std::string sourcebag, std::string targetdir){
+// 解包，将打包后的.bo文件(sourcebag)解包到目录(targetfile)
+bool EchoPack::unpackBag(std::string sourcebag, std::string targetfile){
 	// 先简单校验是否为.bo文件
 	int fin;
-	if ( sourcebag.substr(sourcebag.find_last_of('.'))!= packSuffix ){
+	if ( sourcebag.substr(sourcebag.find_last_of('.'))!= BUKindsSuffix["Pack"] ){
 		std::cout << "当前解包文件格式不符，退出解包！"<<std::endl;
 		return false;
 	}else{
 		fin = open(sourcebag.c_str(), O_RDONLY);
-		if (turnBagToFile(fin, targetdir)){
+		if (turnBagToFile(fin, targetfile)){
 			std::cout << "解包成功！"<<std::endl;
 			close(fin);
 			return true;

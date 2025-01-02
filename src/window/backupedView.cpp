@@ -4,7 +4,8 @@
 // 查看有哪些文件备份 
 BackUpedViewer::BackUpedViewer(const QString &filePath, QWidget *parent ) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
-
+    this->selectRenameDir="";  
+    this->selectDirName  ="";
     // 创建 QTreeView
     this->treeView = new QTreeView(this);
     layout->addWidget(this->treeView);
@@ -91,14 +92,13 @@ void BackUpedViewer:: onTreeViewClicked(){
 
 
 
-
-
 // 查看某个文件的不同备份记录
 BackUpVersionViewer::BackUpVersionViewer(const QString &filePath , const QString &WindowTitle , QWidget *parent ) : QWidget(parent) {
     this->filePath = filePath ;
     this->selectDirName   ="";
     this->selectRenameDir =""; // 当前备份的备份文件名
     this->selectBUPath    ="";
+    this->selectifEncrypt ="";
     // 获取屏幕信息
     QScreen *screen = QGuiApplication::primaryScreen(); // 获取主屏幕
     if (!screen){
@@ -133,7 +133,7 @@ BackUpVersionViewer::BackUpVersionViewer(const QString &filePath , const QString
     }
     // 读取文件内容
     QTextStream in(&file);
-    QStringList list{"备份时的文件名", "当前备份的备份文件名", "备份时间", "备份时的路径"};
+    QStringList list{"备份时的文件名", "当前备份的备份文件名","备份时间", "备份时的路径","是否加密"};
     this->model->setHorizontalHeaderLabels(list);
     while (!in.atEnd()) {
         QString line = in.readLine();
@@ -158,17 +158,18 @@ BackUpVersionViewer::BackUpVersionViewer(const QString &filePath , const QString
     this->treeView->setAlternatingRowColors(true);  // 可选：设置交替行颜色
     this->treeView->setFixedHeight(200); // 设置 QTreeView 的高度  // 例如设置高度为 200 像素
         // 设置列的初始宽度
-        this->treeView->setColumnWidth(0, 140); // 设置第一列（Name）的宽度
-        this->treeView->setColumnWidth(1, 140); // 设置第二列（Size）的宽度
-        this->treeView->setColumnWidth(2, 140); // 设置第三列（Type）的宽度
-        this->treeView->setColumnWidth(3, 200); // 设置第三列（Type）的宽度
-
+        this->treeView->setColumnWidth(0, 110); // 设置第一列（Name）的宽度
+        this->treeView->setColumnWidth(1, 130); // 设置第二列（Size）的宽度
+        this->treeView->setColumnWidth(2, 125); // 设置第三列（Type）的宽度
+        this->treeView->setColumnWidth(3, 300); // 设置第三列（Type）的宽度
+        this->treeView->setColumnWidth(4, 20); // 设置第三列（Type）的宽度
     // 添加到主布局
     mainLayout->addLayout(layout);
 
     // 创建指定路径还原布局
     QHBoxLayout *specialRestoreLayout = new QHBoxLayout();
     QLabel *restore_path_label = new QLabel("指定还原路径为：" , this); //创建文本提示
+    restore_path_label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);// 设置文本可以被选中、复制
     specialRestoreLayout->addWidget(restore_path_label);
     this->pathInput = new QLineEdit(this);    // 创建文本输入框
     this->pathInput->setPlaceholderText("Enter directory path");
@@ -217,7 +218,7 @@ void BackUpVersionViewer:: onTreeViewClicked(){
         this->selectDirName   = model->data(model->index(row, 0)).toString() ;  // 备份时文件名
         this->selectRenameDir = model->data(model->index(row, 1)).toString() ;  // 当前备份的备份文件名
         this->selectBUPath    = model->data(model->index(row, 3)).toString() ; // 备份时的路径
-
+        this->selectifEncrypt = model->data(model->index(row, 4)).toString() ; // 备份时是否加密
         // QMessageBox::information(this, "Selected Row Data", "You selected: " + selectDirName+selectRenameDir+selectBUPath);
     } else {
         QMessageBox::warning(this, "No Selection", "No item is selected.");
@@ -233,17 +234,19 @@ bool isValidFileName(const QString &fileName) {
 
 // 检查path是否合法: 1上级目录是否存在，不存在就新建 2文件名是否已经存在，存在即重新输入
 QString checkPath(const QString &path){
-    QString returnPath ;
+    QString returnPath = path ;
     //首先检查 selectBUPath 是否合法
         // 上级目录是否存在
     QString parentDir = QFileInfo(path).absolutePath(); // 获取上级目录路径
     QDir dir(parentDir);
     if (!dir.exists(parentDir)) {   // 如果上级目录不存在，尝试创建它
-        if (!dir.mkpath(parentDir)) QMessageBox::warning(nullptr, "Error", "Directories not exist and failed to create directories.");
+        // if (!dir.mkpath(parentDir)) 
+        QMessageBox::warning(nullptr, "Error", "Directories not exist.");
         return "";
     }
         // 文件名是否有重名
     QString fileName = QFileInfo(path).fileName();  // 获取文件名
+    std::cout<<fileName.toStdString()<<std::endl;
     // 如果文件名已经存在
     while (!isValidFileName(fileName) || dir.exists(fileName)) {
         // 弹出对话框让用户重命名
@@ -271,36 +274,69 @@ QString checkPath(const QString &path){
 
 // 还原到备份时的路径
 void BackUpVersionViewer:: restoreButtonClicked(){
-    if(this->selectBUPath==""||this->selectRenameDir=="" || this->selectDirName ==""){
+    if(this->selectBUPath==""||this->selectRenameDir=="" || this->selectDirName =="" || this->selectifEncrypt==""){
         QMessageBox::warning(nullptr, "Notice", "未选中备份点，还原失败。"); 
         return;
     }
-
-    // 当前备份文件名 selectRenameDir ，第四项备份时路径 selectBUPath  
+    
+    if(FileUtils::isSubPath(this->selectBUPath.toStdString() , DefaultBackupPath)){
+        QMessageBox::warning(nullptr, "Notice", this->selectDirName+" Restore failed.\n还原失败，所给目录为软件备份工作目录内！不允许还原到此处"); 
+        return;
+    }
+    // 当前的工作路径 this->filePath(某个文件的备份点存储文件)  当前要还原的备份文件名 this->selectRenameDir ，  this->selectBUPath是备份时的路径
     //首先检查 selectBUPath 是否合法
     QString targetfile = checkPath(this->selectBUPath) ;
-    if(targetfile=="")return ;
-    if(FileTools::copyAllFileKinds( (this->filePath +"/"+ this->selectRenameDir).toStdString() , targetfile.toStdString() ) )QMessageBox::information(nullptr,"Notice", "Restore successfully.\n还原成功."); 
+    if(targetfile=="")return ;  // 检查 selectBUPath 是否合法
+
+    // 如果有加密，就获取加密密码
+    QString password="" ;
+    if(this->selectifEncrypt=="Yes"){ // 备份有加密，要解密，输入密码
+        DecPWDDialog dialog(this);
+        if (dialog.exec() == QDialog::Accepted)password = dialog.getPassword();
+        else return;
+    }
+
+    if(EchoBackup::restoreFile( this->filePath.toStdString() , this->selectRenameDir.toStdString() , targetfile.toStdString() , password.toStdString()) )
+        QMessageBox::information(nullptr,"Notice", "Restore successfully.\n还原成功."); 
     else QMessageBox::warning(nullptr, "Notice", "Restore failed.\n还原失败."); 
 
 }
 
 // 还原到指定路径
 void BackUpVersionViewer:: specialRestoreButtonClicked(){
-    if(this->selectBUPath==""||this->selectRenameDir=="" || this->selectDirName ==""){
+    if(this->selectBUPath==""||this->selectRenameDir=="" || this->selectDirName ==""|| this->selectifEncrypt == ""){
         QMessageBox::warning(nullptr, "Notice", "未选中备份点，还原失败。"); 
         return ;
     }
-    QString directoryPath = this->pathInput->text();
-    if (QFileInfo::exists(directoryPath) && QFileInfo(directoryPath).isDir()) {
+    QString directory = this->pathInput->text();
+    if (QFileInfo::exists(directory) && QFileInfo(directory).isDir()) {
+    // directory 只是还原路径所在的目录 ，文件名还需要重新确定(默认之前的)
+        if(FileUtils::isSubPath(directory.toStdString() , DefaultBackupPath)){
+            QMessageBox::warning(nullptr, "Notice", this->selectDirName+" Restore failed.\n还原失败，所给目录为软件备份工作目录内！不允许还原到此处"); 
+            return;
+        }
+        std::cout<<"sada\n";
+
+        std::cout<<(directory+'/'+ this->selectDirName).toStdString()<<std::endl;
         //首先检查 selectBUPath 是否合法
-        QString targetfile = checkPath(directoryPath) ;
+        QString targetfile = checkPath(directory+'/'+ this->selectDirName) ;
         if(targetfile=="")return ;
-            
-        if(FileTools::copyAllFileKinds( (this->filePath +"/"+ this->selectRenameDir).toStdString() , targetfile.toStdString() ))QMessageBox::information(nullptr,"Notice", "Restore successfully.\n还原成功."); 
+        std::cout<<"sada22\n";
+         // 如果有加密，就获取加密密码
+        QString password="" ;
+        if(this->selectifEncrypt=="Yes"){ // 备份有加密，要解密，输入密码
+            DecPWDDialog dialog(this);
+            if (dialog.exec() == QDialog::Accepted)password = dialog.getPassword();
+            else return;
+        }
+
+        if(EchoBackup::restoreFile( this->filePath.toStdString() , this->selectRenameDir.toStdString() , targetfile.toStdString(), password.toStdString() ) )
+            QMessageBox::information(nullptr,"Notice", "Restore successfully.\n还原成功."); 
         else QMessageBox::warning(nullptr, "Notice", "Restore failed.\n还原失败."); 
+
+
     }else {
         QMessageBox::warning(this, "Invalid Path", "The specified path does not exist or is not a directory.");
-        this->pathInput->clear(); // 清空路径输入框的文本
+        // this->pathInput->clear(); // 清空路径输入框的文本
     }
 }

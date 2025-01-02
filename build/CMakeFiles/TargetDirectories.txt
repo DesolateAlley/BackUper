@@ -1,0 +1,6 @@
+/media/sf_ShareDir/myEchoBack/build/CMakeFiles/rebuild_cache.dir
+/media/sf_ShareDir/myEchoBack/build/CMakeFiles/edit_cache.dir
+/media/sf_ShareDir/myEchoBack/build/CMakeFiles/EchoBack.dir
+/media/sf_ShareDir/myEchoBack/build/CMakeFiles/EchoBack_autogen.dir
+/media/sf_ShareDir/myEchoBack/build/src/CMakeFiles/rebuild_cache.dir
+/media/sf_ShareDir/myEchoBack/build/src/CMakeFiles/edit_cache.dir

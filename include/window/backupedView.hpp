@@ -2,7 +2,10 @@
 #define BACKUPEDVIEW_HPP
 
 #include "../AllQtHead.hpp" //所有的Qt头文件
-#include "../filetools.hpp"
+#include "../fileutils.hpp"
+#include "../backup/echoBackup.hpp"
+
+#include "pwdInputWindow.hpp"
 
 class BackUpedViewer : public QWidget {
     Q_OBJECT  // 需要这个宏以支持信号和槽
@@ -29,6 +32,7 @@ public:
     QString selectDirName ;   // 备份时文件名
     QString selectRenameDir ;  // 当前备份的备份文件名
     QString selectBUPath ;    // 备份时的路径
+    QString selectifEncrypt ;    // 备份时是否加密
 
     BackUpVersionViewer(const QString &filePath ,  const QString &WindowTitle ="" ,  QWidget *parent = nullptr) ;
 

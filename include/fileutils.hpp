@@ -1,5 +1,7 @@
-#ifndef FILETOOLS_HPP
-#define FILETOOLS_HPP
+#ifndef FILEUTILS_HPP
+#define FILEUTILS_HPP
+
+#include "./GlobalVariable.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -13,10 +15,9 @@
 #include <libgen.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-
 #include <sys/types.h>
 #include <errno.h>
-
+#include <filesystem>
 #include <optional>
 #include <random>
 #include <time.h>
@@ -27,7 +28,7 @@
 #include <memory>
 #include <queue>
 #include <map>
-
+#include <unordered_map>
 #include <iomanip>
 #include <chrono>
 #include <ctime>
@@ -37,23 +38,14 @@
 
 #define COPYINCR (1024 * 1024 * 1024)
 
-
-// 默认的备份文件存储路径
-extern std::string DefaultBackupPath ;
-
-// 记录不同文件的备份信息，用于区分每次备份的是不是已经备份过，以及区分不同文件的备份
-extern std::string DefaultBackupInfo ;
-
-// 每个文件备份文件夹里的记录，用于记录每次备份的信息
-extern std::string DefaultBackupRecord ;
-
-//打包时加的默认后缀
-extern std::string  packSuffix ;
-
-class FileTools{
+/**
+ * 基本的文件工具类
+ * 其中有许多静态方法
+ */
+class FileUtils{
  public:
-	FileTools(){};  
-	~FileTools(){};  
+	FileUtils(){};  
+	~FileUtils(){};  
 
 	// 展示当前工作目录结构
 	static bool printDir(std::string workdir,int indent , int depth=2);  
@@ -79,14 +71,20 @@ class FileTools{
 	// 将data追加到path文件(普通文件)的下一行  将新备份的文件info追加入 BackUpInfo 
     static bool addToFile(std::string path , std::string data);
 
+	static bool isSubPath(const std::string& filepath, const std::string& defaultpath);
 
+
+	void identify_file_type(const std::string& filepath);
 	// 文件复制 从source复制到targetfile
 	static bool copyRegFile(std::string source, std::string destination); // 备份普通文件，便于moveFile以及backupDir调用
+    static bool copyDir(std::string sourceDir, std::string targetDir);  // 包含四种文件类型的目录备份功能
     static bool copySymLINK(std::string sourcefile, std::string targetfile); // 备份软链接(符号链接)
     static bool copyHardLINK(std::string  sourceFile, std::string targetFile); // 备份硬链接文件 
-    static bool copyFIFO(std::string sourcefile, std::string targetfile); // 备份管道
-    static bool copyDir(std::string sourceDir, std::string targetDir);  // 包含四种文件类型的目录备份功能
+	static bool copyFIFO(std::string sourcefile, std::string targetfile); // 备份管道
 
+    static bool copyDev(std::string sourcefile, std::string targetfile); // 备份 字符和块设备文件
+    static bool copySocket(std::string sourcefile, std::string targetfile); // 备份 套接字文件
+ 
 	// 文件复制方法，将 sourcefile 的文件复制到 targetfile 
     static bool copyAllFileKinds(std::string sourcefile, std::string targetfile);
 

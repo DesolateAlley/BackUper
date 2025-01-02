@@ -1,11 +1,11 @@
-#include "../include/filetools.hpp"
+#include "../include/fileutils.hpp"
 
  
 // 打印当前目录树结构
 	// @param: dir 当前目录
 	// @param: indent 缩进数量
 	// @param: depth 递归深度
-bool FileTools::printDir(std::string dir, int indent , int depth){
+bool FileUtils::printDir(std::string dir, int indent , int depth){
 	if(depth<0){
 		printf("%*s...\n", indent, "" );
 		return true ;
@@ -40,19 +40,15 @@ bool FileTools::printDir(std::string dir, int indent , int depth){
 }
 
 // 递归创建新目录，若父目录不存在，从最低级目录递归创建
-bool FileTools::recurMakeDir(std::string dirPath, mode_t mode)
-{
+bool FileUtils::recurMakeDir(std::string dirPath, mode_t mode){
 	char path[PATH_MAX];
 	strcpy(path, dirPath.c_str());
 	if (dirPath == "." || dirPath == "/"){
 		return true;
 	}
-	if (access(dirPath.c_str(), F_OK) == 0)
-	{
+	if (access(dirPath.c_str(), F_OK) == 0){
 		return true;
-	}
-	else
-	{
+	}else{
 		recurMakeDir(dirname(path));  //dirname(char *path)用于从路径字符串中提取目录路径部分。定义在<libgen.h>中。其主要作用是获取给定路径中最后一个斜杠 (/) 之前的部分，即文件或目录所属的父目录路径。
 		mkdir(dirPath.c_str(), mode);
 		return true;
@@ -60,8 +56,7 @@ bool FileTools::recurMakeDir(std::string dirPath, mode_t mode)
 }
 
 // 创建新目录函数，便于后续复制目录
-bool FileTools::mkDir(std::string dirPathName, mode_t mode)
-{
+bool FileUtils::mkDir(std::string dirPathName, mode_t mode){
 	if (dirPathName == "." || dirPathName == "/")return true;	
 	if (access(dirPathName.c_str(), F_OK) == 0)return true;
 	else{
@@ -72,7 +67,7 @@ bool FileTools::mkDir(std::string dirPathName, mode_t mode)
 }
 
 // 目录判空函数，便于删除和移动目录
-bool FileTools::EmptyDir(std::string dirName){
+bool FileUtils::EmptyDir(std::string dirName){
 	DIR *dp;
 	struct dirent *entry;
 	struct stat *buff;
@@ -92,8 +87,9 @@ bool FileTools::EmptyDir(std::string dirName){
 		return false;
 }
 
+ 
 // 删除目录函数，执行删除目录或者文件(兼容)，若目录非空会询问是否删除目录内文件
-bool FileTools::rmDirOrFile(std::string tgtName, bool ifconfirm){
+bool FileUtils::rmDirOrFile(std::string tgtName, bool ifconfirm){
 	DIR *tgtDP;
 	struct dirent *tgtEntry;
 	struct stat tgtBuff;
@@ -121,7 +117,8 @@ bool FileTools::rmDirOrFile(std::string tgtName, bool ifconfirm){
 					rmDirOrFile(filename);
 				}
 				// 若是目录下普通文件，确认是否删除
-				else if (S_ISFIFO(tgtBuff.st_mode) || S_ISLNK(tgtBuff.st_mode) || S_ISREG(tgtBuff.st_mode)){
+				else if (S_ISFIFO(tgtBuff.st_mode) || S_ISLNK(tgtBuff.st_mode) || S_ISREG(tgtBuff.st_mode)
+							|| S_ISCHR(tgtBuff.st_mode) || S_ISBLK(tgtBuff.st_mode) || S_ISSOCK(tgtBuff.st_mode) ){
 					char flag;
 					if(ifconfirm){
 						std::cout << "确定删除当前文件？"<< filename<< "输入y/Y删除,任意其他键跳过删除" << std::endl;
@@ -164,18 +161,11 @@ bool FileTools::rmDirOrFile(std::string tgtName, bool ifconfirm){
 	return true;
 }
  
- 
-
-
-
-
-
-
 
 
 
 // 获取系统时间
-std::string FileTools:: getCurrentTimeString() {
+std::string FileUtils:: getCurrentTimeString() {
     // 获取当前时间点
     auto now = std::chrono::system_clock::now();
     
@@ -192,7 +182,7 @@ std::string FileTools:: getCurrentTimeString() {
 }
 
 // 生成指定长度的随机字符串
-std::string  FileTools:: getRandomString(size_t length) {
+std::string  FileUtils:: getRandomString(size_t length) {
     const char characters[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     std::string result;
     result.reserve(length);
@@ -209,7 +199,7 @@ std::string  FileTools:: getRandomString(size_t length) {
 }
 
 // 获取指定文件的内容行数，不做文件类型检查，因为用于备份记录，一定是普通文件
-int FileTools::getFileLine(std::string filepath){
+int FileUtils::getFileLine(std::string filepath){
     std::ifstream inputFile(filepath);
     if (!inputFile.is_open()) {
         return -1; 
@@ -222,7 +212,7 @@ int FileTools::getFileLine(std::string filepath){
 }
 
 // 将data追加到path文件(普通文件)的下一行  将新备份的文件info追加入 BackUpInfo 
-bool FileTools::addToFile(std::string path , std::string data){
+bool FileUtils::addToFile(std::string path , std::string data){
     // 创建输出文件流并以追加模式打开
     std::ofstream outFile(path, std::ios::app);
     if (!outFile) {
@@ -237,10 +227,46 @@ bool FileTools::addToFile(std::string path , std::string data){
     return true;
 }
 
+// 判断 filepath 是不是 defaultpath 的子路径 
+bool FileUtils::isSubPath(const std::string& filepath, const std::string& defaultpath) {
+    // 使用 absolute() 转换路径为绝对路径
 
+    std::filesystem::path abs_filepath = std::filesystem::weakly_canonical(filepath);
+    std::filesystem::path abs_defaultpath = std::filesystem::weakly_canonical(defaultpath);
+
+    // 判断s绝对路径 abs_filepath 是否是 abs_defaultpath 的子路径
+    return abs_filepath.string().find(abs_defaultpath.string()+'/') == 0 || abs_filepath.string()==(abs_defaultpath.string()) ;
+}
+
+
+
+void FileUtils::identify_file_type(const std::string& filepath) {
+    struct stat fileStat;
+    if (lstat(filepath.c_str(), &fileStat) < 0) {
+        perror("lstat failed");
+        return;
+    }
+    if (S_ISREG(fileStat.st_mode)) {
+        std::cout<<filepath+"is a regular file."<<std::endl;
+    } else if (S_ISDIR(fileStat.st_mode)) {
+        std::cout<<filepath+"is a directory."<<std::endl;
+    } else if (S_ISLNK(fileStat.st_mode)) {
+        std::cout<<filepath+"is a symbolic link."<<std::endl;
+    } else if (S_ISCHR(fileStat.st_mode)) {
+        std::cout<<filepath+"is a character device file."<<std::endl;
+    } else if (S_ISBLK(fileStat.st_mode)) {
+        std::cout<<filepath+"is a block device file."<<std::endl;
+    } else if (S_ISFIFO(fileStat.st_mode)) {
+        std::cout<<filepath+"is a FIFO (named pipe)."<<std::endl;
+    } else if (S_ISSOCK(fileStat.st_mode)) {
+        std::cout<<filepath+"is a FIFO (named pipe)."<<std::endl;
+    } else {
+        std::cout<<filepath+"is of an unknown type."<<std::endl;
+    }
+}
 
 // 复制器的普通文件复制函数实现,sourcefile为源文件名，targetfile为目标文件名
-bool FileTools::copyRegFile(std::string sourceFile, std::string targetFile){
+bool FileUtils::copyRegFile(std::string sourceFile, std::string targetFile){
 
 	int fin, fout;			  // 文件描述符
 	void *src, *dst;		  // 无类型指针，便于后续使用
@@ -322,19 +348,27 @@ bool FileTools::copyRegFile(std::string sourceFile, std::string targetFile){
 
 // 复制软链接文件，sourcefile为源文件名，targetfile为目标文件名
 // 可以通过 ln -s 命令创建软连接。例如：ln -s /path/to/target /path/to/link
-bool FileTools::copySymLINK(std::string sourcefile, std::string targetfile){
+bool FileUtils::copySymLINK(std::string sourcefile, std::string targetfile){
     char buf[BUFFER_SIZE];  // 缓冲区，用于存储符号链接指向的目标路径
     struct timespec times[2];
     struct stat statbuf;
     if (stat(sourcefile.c_str(), &statbuf) != 0){ //stat()获取 sourcefile 状态信息，结果存储在 statbuf 中。返回0表示成功，返回非0表示失败。
         perror("link");
+		std::cout<<sourcefile+"文件状态获取失败"<<std::endl;
         return false;
     }
     // 读取源符号链接的目标路径
-    readlink(sourcefile.c_str(), buf, sizeof(buf)); // 读取源链接:readlink()读取符号链接 sourcefile 指向的目标路径，并将其存储在 buf 中,该函数不在 buf 字符数组末尾添加空字符
-    // 创建符号链接
+    ssize_t len =readlink(sourcefile.c_str(), buf, sizeof(buf)-1); // 读取源链接:readlink()读取符号链接 sourcefile 指向的目标路径，并将其存储在 buf 中,该函数不在 buf 字符数组末尾添加空字符
+    if (len == -1) {
+        std::cerr << "Error reading symbolic link: " << strerror(errno) << std::endl;
+        return false;
+    }
+    // 确保目标路径以 '\0' 结尾
+    buf[len] = '\0';
+	// 创建符号链接
     if (symlink(buf, targetfile.c_str()) < 0) {   // 复制源链接:symlink()在目标位置 targetfile 处创建一个新的符号链接，指向源文件的目标路径（即 buf 中存储的路径）。 
         perror("link");
+		std::cout<<"在"+targetfile+"新建一个指向"+buf+"的符号连接失败"<<std::endl;
         return false;
     }
 
@@ -349,7 +383,7 @@ bool FileTools::copySymLINK(std::string sourcefile, std::string targetfile){
 
 // 复制硬链接文件，sourcefile为源文件名，targetfile为目标文件名
 //可以通过 ln（不带 -s 选项）创建硬链接。例如： ln /path/to/target /path/to/link
-bool FileTools::copyHardLINK( std::string  sourceFile,   std::string  targetFile) {
+bool FileUtils::copyHardLINK( std::string  sourceFile,   std::string  targetFile) {
     struct timespec times[2];
     struct stat statbuf;
     // 获取源文件的状态信息
@@ -374,7 +408,7 @@ bool FileTools::copyHardLINK( std::string  sourceFile,   std::string  targetFile
 }
 
 // 复制管道文件，sourcefile为源文件名，targetfile为目标文件名
-bool FileTools::copyFIFO(std::string sourcefile, std::string targetfile){
+bool FileUtils::copyFIFO(std::string sourcefile, std::string targetfile){
     struct stat statbuf;
     struct timespec times[2];
     if (stat(sourcefile.c_str(), &statbuf)){ //stat() 函数获取源文件的信息
@@ -395,8 +429,104 @@ bool FileTools::copyFIFO(std::string sourcefile, std::string targetfile){
     return true;
 }
 
+
+// 复制 字符和块 设备文件
+bool FileUtils::copyDev(std::string sourcefile, std::string targetfile){
+	struct stat fileStat;
+    // 获取源文件的属性
+    if (lstat(sourcefile.c_str(), &fileStat) < 0) {
+		std::cout<<sourcefile+" Failed to get source file status"<<std::endl;
+        return false;
+    }
+    // 确认源文件是字符设备文件
+    if (!S_ISCHR(fileStat.st_mode)&&!S_ISBLK(fileStat.st_mode)) {
+        std::cerr << sourcefile+" Source file is not a character device file or block device file." << std::endl;
+        return false;
+    }
+
+    // 使用 mknod 创建目标字符设备文件
+    if (mknod(targetfile.c_str(), fileStat.st_mode, fileStat.st_rdev) < 0) {
+		std::cout<<"Failed to create target character device file"<<std::endl;
+        return false;
+    }
+
+	////****保持元数据一致性
+    // 设置目标文件的权限，与源文件一致
+    if (chmod(targetfile.c_str(), fileStat.st_mode & 07777) < 0) {
+		std::cout<<"Failed to set permissions for target file"<<std::endl;
+        return false;
+    }
+	// 设置目标文件的所有者和组
+    if (chown(targetfile.c_str(), fileStat.st_uid, fileStat.st_gid) < 0) {
+		std::cout<<"Failed to set owner and group for target file"<<std::endl;
+        return false;
+    }
+	// 设置目标文件的访问时间和修改时间
+    struct timespec times[2];
+    times[0] = fileStat.st_atim; // 上次访问时间
+    times[1] = fileStat.st_mtim; // 上次修改时间
+    if (utimensat(AT_FDCWD, targetfile.c_str(), times, 0) < 0) {
+    	std::cout<<"Failed to set access and modification times for target file"<<std::endl;
+        return false;
+    }
+
+    return true;
+
+}
+
+// 复制 套接字文件
+bool FileUtils::copySocket(std::string sourcefile, std::string targetfile){
+	struct stat fileStat;
+
+    // 获取源文件的属性
+    if (lstat(sourcefile.c_str(), &fileStat) < 0) {
+		std::cout<<sourcefile+" Failed to get source file status"<<std::endl;
+        return false;
+    }
+    // 确认源文件是套接字文件
+    if (!S_ISSOCK(fileStat.st_mode)) {
+        std::cerr << sourcefile+" Source file is not a socket file." << std::endl;
+        return false;
+    }
+
+    // 使用 mknod 创建目标套接字文件
+    if (mknod(targetfile.c_str(), S_IFSOCK | (fileStat.st_mode & 07777), 0) < 0) {
+		std::cout<<"Failed to create target socket file "+ targetfile<<std::endl;
+        return false;
+    }
+
+	////****保持元数据一致性
+    // 设置目标文件的权限
+    if (chmod(targetfile.c_str(), fileStat.st_mode & 07777) < 0) {
+		std::cout<<"Failed to set permissions for target file"<<std::endl;
+        return false;
+    }
+    // 设置目标文件的所有者和组
+    if (chown(targetfile.c_str(), fileStat.st_uid, fileStat.st_gid) < 0) {
+		std::cout<<"Failed to set owner and group for target file"<<std::endl;
+        return false;
+    }
+    // 设置目标文件的访问时间和修改时间
+    struct timespec times[2];
+    times[0] = fileStat.st_atim; // 上次访问时间
+    times[1] = fileStat.st_mtim; // 上次修改时间
+    if (utimensat(AT_FDCWD, targetfile.c_str(), times, 0) < 0) {
+        std::cout<<"Failed to set access and modification times for target file"<<std::endl;
+        return false;
+    }
+
+    return true;
+
+
+}
+
+
 // 递归复制目录，sourceDir为源目录，targetDir为目标目录
-bool FileTools::copyDir(std::string sourceDir, std::string targetDir){
+bool FileUtils::copyDir(std::string sourceDir, std::string targetDir){
+	// 递归到 DefaultBackupPath 时跳过
+	if(std::filesystem::weakly_canonical(sourceDir).string() == std::filesystem::weakly_canonical(DefaultBackupPath).string()
+		|| ( (std::filesystem::weakly_canonical(sourceDir).string()) == (std::filesystem::weakly_canonical(DefaultBackupPath).string()+'/') )  
+	)return true ;
     DIR *srcDir;
     struct dirent *srcDirEntry;
     struct stat srcBuff;
@@ -416,8 +546,8 @@ bool FileTools::copyDir(std::string sourceDir, std::string targetDir){
         if (strcmp(srcDirEntry->d_name, ".") == 0 || strcmp(srcDirEntry->d_name, "..") == 0)
             continue;
         if (S_ISDIR(srcBuff.st_mode)){ //子目录是一个文件夹，递归调用复制
-            if (!copyDir(filename, targetDir)){
-                std::cout << "递归复制失败" << std::endl;
+            if (!copyDir(filename, targetDir+ '/' + srcDirEntry->d_name)){
+                std::cout << filename+"递归复制到"+ targetDir+ '/' + srcDirEntry->d_name+"失败" << std::endl;
                 return false;
             }
         }else if (S_ISREG(srcBuff.st_mode)){ //子目录是一个普通文件
@@ -432,6 +562,16 @@ bool FileTools::copyDir(std::string sourceDir, std::string targetDir){
             }
         }else if (S_ISLNK(srcBuff.st_mode)){ //子目录是一个软链接文件
             if (!copySymLINK(filename, targetDir + '/' + srcDirEntry->d_name)){
+                std::cout << "复制文件失败" << std::endl;
+                return false;
+            }
+        }else if (S_ISCHR(srcBuff.st_mode) || S_ISBLK(srcBuff.st_mode) ){  //子目录是一个字符设备or块设备文件
+            if (!copyDev(filename, targetDir + '/' + srcDirEntry->d_name)){
+                std::cout << "复制文件失败" << std::endl;
+                return false;
+            }
+        }else if (S_ISSOCK(srcBuff.st_mode)){  //子目录是一个套接字文件
+            if (!copySocket(filename, targetDir + '/' + srcDirEntry->d_name)){
                 std::cout << "复制文件失败" << std::endl;
                 return false;
             }
@@ -450,35 +590,42 @@ bool FileTools::copyDir(std::string sourceDir, std::string targetDir){
     return true;
 }
 
+
 // 文件复制方法，将 sourcefile 的文件复制到 targetfile 
-bool  FileTools::copyAllFileKinds(std::string sourcefile, std::string targetfile){
+bool  FileUtils::copyAllFileKinds(std::string sourcefile, std::string targetfile){
 	struct stat srcbuf;
     stat(sourcefile.c_str(), &srcbuf);
     if (S_ISDIR(srcbuf.st_mode)){   //目录文件
         if (copyDir(sourcefile, targetfile)){
-            std::cout << sourcefile << "复制成功！"<<std::endl;
+            // std::cout << sourcefile << "复制成功！"<<std::endl;
             return true;
         }
     }else if (S_ISREG(srcbuf.st_mode)){     // 普通文件
         if (copyRegFile(sourcefile, targetfile)){
-            std::cout << sourcefile << "复制成功！"<<std::endl;
+            // std::cout << sourcefile << "复制成功！"<<std::endl;
             return true;
         }
     }else if (S_ISLNK(srcbuf.st_mode)){     //软链接文件
         if (copySymLINK(sourcefile, targetfile)){
-            std::cout << sourcefile << "复制成功！"<<std::endl;
+            // std::cout << sourcefile << "复制成功！"<<std::endl;
             return true;
         }
     }else if (S_ISFIFO(srcbuf.st_mode)){    //管道文件
         if (copyFIFO(sourcefile, targetfile)){
-            std::cout << sourcefile << "复制成功！"<<std::endl;
+            // std::cout << sourcefile << "复制成功！"<<std::endl;
             return true;
         }
-    }else   std::cout << "非常抱歉！当前系统不支持该文件类型"<<std::endl;
+    }else if (S_ISCHR(srcbuf.st_mode) || S_ISBLK(srcbuf.st_mode) ){  // 字符设备or块设备文件
+        if (copyDev( sourcefile, targetfile)){
+            return true;
+        }
+    }else if (S_ISSOCK(srcbuf.st_mode)){  //子目录是一个套接字文件
+        if (copySocket( sourcefile, targetfile)){
+            return true;
+        }
+    }else  std::cout << "非常抱歉！当前系统不支持该文件类型"<<std::endl;
     
     return false;
-
-	
 }
 
 
@@ -490,24 +637,9 @@ bool  FileTools::copyAllFileKinds(std::string sourcefile, std::string targetfile
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+////***************************************************************************************************
+////**** 另一个类的函数***************************************************************************************************
+////***************************************************************************************************
 
 // BackUpInfo 的构造函数,根据 BackUpInfo(file) 读取的一行字符串初始化
 BackUpInfo::BackUpInfo( std::string line ){

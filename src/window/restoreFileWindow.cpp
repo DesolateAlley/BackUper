@@ -12,15 +12,17 @@ RestoreWindow::RestoreWindow(QWidget *parent ) : QWidget(parent) {
     int screenWidth = screen->geometry().width(); // 屏幕宽度
     int screenHeight = screen->geometry().height(); // 屏幕高度
     this->setWindowTitle("Restore");
+    this->setStyleSheet("background-color: rgba(242, 255, 248, 1)"); //应用背景颜色
     this->resize(700, 400); // 设置窗口大小
     this->move((screenWidth -  this->width()) / 2, (screenHeight - this->height()) / 2); // 设置窗口初始位置 // 计算窗口位置以居中显示 设置窗口初始位置
+
 
     // window 的主要层(垂直)
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
 
     // 创建 BackUpedViewer 实例并添加到布局
-    this->backupedViewer = new BackUpedViewer( QString::fromStdString(DefaultBackupPath+"/BackUpInfo") , this);
+    this->backupedViewer = new BackUpedViewer( QString::fromStdString(DefaultBackupPath+"/"+DefaultBUInfoName) , this);
     mainLayout->addWidget(this->backupedViewer);
     mainLayout->setAlignment(this->backupedViewer , Qt::AlignTop);
 
@@ -49,9 +51,12 @@ RestoreWindow::RestoreWindow(QWidget *parent ) : QWidget(parent) {
 void RestoreWindow::viewButtonClicked(){
     // 选中的文件名 this->backupedViewer->selectRenameDir ;
     // QMessageBox::information(this, "Selected Row Data", "You selected: " + this->backupedViewer->selectRenameDir);
-
-    QString  viewDirPath = QString::fromStdString(DefaultBackupPath + "/BackUpFiles") +"/"+ this->backupedViewer->selectRenameDir ;
-
+    if( this->backupedViewer->selectDirName == ""){
+        // 未选中文件,报错
+        QMessageBox::warning(nullptr, "Notice", "No  selected.\n未选中备份点."); 
+        return ;
+    }
+    QString  viewDirPath = QString::fromStdString(DefaultBackupPath + "/" + DefaultBUFilesName ) +"/"+ this->backupedViewer->selectRenameDir ;
 
     // 实例化新窗口，并显示
     BackUpVersionViewer *BUVersionViewer = new BackUpVersionViewer( viewDirPath  , this->backupedViewer->selectDirName );

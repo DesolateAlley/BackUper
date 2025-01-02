@@ -1,6 +1,7 @@
 #ifndef ALLQTHEAD_HPP  // AllQtHead.hpp
 #define ALLQTHEAD_HPP
 
+#include "./GlobalVariable.hpp"
 
 #include <QApplication>
 #include <QWidget>
@@ -13,12 +14,9 @@
 #include <QMessageBox> // 消息提示框
 #include <QListWidget>
 #include <QString>
-
-
 #include <QTreeView>
 #include <QFileSystemModel>
 #include <QDir>
-
 #include <QDebug>
 #include <QStandardItemModel>
 #include <QFile>
@@ -28,20 +26,13 @@
 #include <QInputDialog>
 #include <QRegularExpression>
 #include <QFileInfo>
+#include <QRadioButton>
+#include <QCheckBox>
+#include <QFrame>
+
+#include <unordered_map>
+#include <vector>
 
 
-extern QString viewDirPath;
-
-// 默认的备份文件存储路径
-extern std::string DefaultBackupPath ;
-
-// 记录不同文件的备份信息，用于区分每次备份的是不是已经备份过，以及区分不同文件的备份
-extern std::string DefaultBackupInfo ;
-
-// 每个文件备份文件夹里的记录，用于记录每次备份的信息
-extern std::string DefaultBackupRecord ;
-
-//打包时加的默认后缀
-extern std::string  packSuffix ;
 
 #endif
