@@ -128,7 +128,7 @@ bool EchoPack::addFileToBag(std::string dirname, int bagfile){
 			fin = open(filePath.c_str(), O_RDONLY);
 			// 文件比一个块大，才多次读入，否则一次读写即可
 			if (statbuf.st_size > BLOCKSIZE){
-				for (int i = 0; i < (statbuf.st_size / BLOCKSIZE) - 1; i++){
+				for (int i = 0; i < (statbuf.st_size / BLOCKSIZE) ; i++){
 					read(fin, buffer, BLOCKSIZE);
 					write(fout, buffer, BLOCKSIZE);
 				}
@@ -202,11 +202,9 @@ bool EchoPack::packFile(std::string sourcefile, std::string targetbag){
 	if ((fout = open(targetbag.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_APPEND, 0644)) < 0){
 		return false;
 	}
-	// 首先写入当前目录的头结点
-	// head = genHeader(sourcefile);
-	// write(fout, head, BLOCKSIZE);
 	char buffer[BLOCKSIZE];
 	char flag[BLOCKSIZE] = {'\0'};
+
 
 	// 获取源文件元数据信息
 	stat(sourcefile.c_str(), &statbuf);
@@ -216,7 +214,8 @@ bool EchoPack::packFile(std::string sourcefile, std::string targetbag){
 		fin = open(sourcefile.c_str(), O_RDONLY);
 		// 文件比一个块大，才多次读入，否则一次读写即可
 		if (statbuf.st_size > BLOCKSIZE){
-			for (int i = 0; i < (statbuf.st_size / BLOCKSIZE) - 1; i++){
+			// for (int i = 0; i < (statbuf.st_size / BLOCKSIZE) - 1; i++){
+			for (int i = 0; i < (statbuf.st_size / BLOCKSIZE) ; i++){
 				read(fin, buffer, BLOCKSIZE);
 				write(fout, buffer, BLOCKSIZE);
 			}
@@ -230,8 +229,8 @@ bool EchoPack::packFile(std::string sourcefile, std::string targetbag){
 			write(fout, flag, BLOCKSIZE - statbuf.st_size);
 		}
 		close(fin);
-	}else if (S_ISLNK(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode
-				|| S_ISCHR(statbuf.st_mode)|| S_ISBLK(statbuf.st_mode) || S_ISSOCK(statbuf.st_mode)  )){  // 如果是链接文件和管道文件，只保留头结点即可
+	}else if (S_ISLNK(statbuf.st_mode) || S_ISFIFO(statbuf.st_mode)
+				|| S_ISCHR(statbuf.st_mode)|| S_ISBLK(statbuf.st_mode) || S_ISSOCK(statbuf.st_mode)  ){  // 如果是链接文件和管道文件，只保留头结点即可
 		head = genHeader(sourcefile);
 		write(fout, head, BLOCKSIZE);
 	}else{	
@@ -272,7 +271,7 @@ bool EchoPack::turnBagToFile(int sourcebag, std::string targetdir){
 				return false;
 			}
 			if (atol(head->size) > BLOCKSIZE){
-				for (int i = 0; i < (atoi(head->size) / BLOCKSIZE) - 1; i++){
+				for (int i = 0; i < (atoi(head->size) / BLOCKSIZE) ; i++){
 					read(sourcebag, buffer, BLOCKSIZE);
 					write(fout, buffer, BLOCKSIZE);
 				}

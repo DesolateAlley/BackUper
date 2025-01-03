@@ -43,6 +43,7 @@ FileExplorer::FileExplorer(const QString &directoryPath , QWidget *parent ) : QW
     // 创建 QFileSystemModel
     this->model = new QFileSystemModel(this);
     this->model->setRootPath(this->curViewPath);
+    this->model->setFilter(QDir::AllEntries | QDir::System | QDir::NoDotAndDotDot);
     this->treeView = new QTreeView(this);
     this->treeView->setModel(this->model);
     this->treeView->setRootIndex(this->model->index(this->curViewPath));

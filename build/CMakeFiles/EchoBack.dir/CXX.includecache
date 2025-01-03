@@ -164,9 +164,27 @@ sstream
 ../backup/echoBackup.hpp
 /media/sf_ShareDir/myEchoBack/include/backup/echoBackup.hpp
 
+/media/sf_ShareDir/myEchoBack/include/window/backupedView.hpp
+../AllQtHead.hpp
+/media/sf_ShareDir/myEchoBack/include/AllQtHead.hpp
+../fileutils.hpp
+/media/sf_ShareDir/myEchoBack/include/fileutils.hpp
+../backup/echoBackup.hpp
+/media/sf_ShareDir/myEchoBack/include/backup/echoBackup.hpp
+pwdInputWindow.hpp
+/media/sf_ShareDir/myEchoBack/include/window/pwdInputWindow.hpp
+
+/media/sf_ShareDir/myEchoBack/include/window/pwdInputWindow.hpp
+../AllQtHead.hpp
+/media/sf_ShareDir/myEchoBack/include/AllQtHead.hpp
+
 /media/sf_ShareDir/myEchoBack/src/backup/echoBackup.cpp
 ../../include/backup/echoBackup.hpp
 /media/sf_ShareDir/myEchoBack/include/backup/echoBackup.hpp
+
+/media/sf_ShareDir/myEchoBack/src/window/backupedView.cpp
+../../include/window/backupedView.hpp
+/media/sf_ShareDir/myEchoBack/include/window/backupedView.hpp
 
 /usr/include/x86_64-linux-gnu/qt5/QtCore/QDebug
 qdebug.h

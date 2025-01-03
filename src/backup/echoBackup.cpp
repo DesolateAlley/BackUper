@@ -114,7 +114,7 @@ std::unique_ptr<BackUpInfo> EchoBackup::backupInit(std::string sourceFile){
     //// 判断该文件之前是否备份过,若备份过,在原备份记录上新增备份点
     // 首先获取 sourceFile 的文件信息 , 构建 BackUpInfo 类
     struct stat srcbuf;
-    stat(sourceFile.c_str(), &srcbuf);
+    lstat(sourceFile.c_str(), &srcbuf);
     std::unique_ptr<BackUpInfo> sourceFileInfo =std::make_unique<BackUpInfo>(sourceFile.substr(sourceFile.find_last_of("/\\") + 1) , 
                                                         std::to_string(srcbuf.st_ino), std::to_string(srcbuf.st_dev) , sourceFile);
     
@@ -184,19 +184,21 @@ bool EchoBackup::advancedBackup(std::string sourceFile, bool ifpack , bool ifcom
         // 先写备份记录文件 其内容为每行是一条备份记录： 备份时的文件名////当前备份的备份文件名（UPRenameVi）////备份时间////备份时的路径
         wdata = sourceFileInfo->filename +"////" + BUVersion+"////" + FileUtils::getCurrentTimeString() + "////" +sourceFile +"////No" ;
         // 下面进行备份
-        if(FileUtils::copyAllFileKinds(sourceFile  , BUFilePath + "/" +BUVersion )){
-            FileUtils::addToFile(BUFilePath +"/" + DefaultBackupRecord ,  wdata) ;
-            return true;    
-        }   
-    }else{ // 需要打包的
-    
-        // 文件复制
         if(!FileUtils::copyAllFileKinds(sourceFile  , BUFilePath + "/" +BUVersion )){
             std::cout<<"文件复制失败"<<std::endl;
             return false ;
+        }   
+
+        // 写备份记录文件 其内容为每行是一条备份记录： 备份时的文件名////当前备份的备份文件名（UPRenameVi）////备份时间////备份时的路径////是否加密了
+        if(!FileUtils::addToFile(BUFilePath +"/" + DefaultBackupRecord ,  wdata) ){
+            std::cout<<"备份记录写入失败"<<std::endl;
+            FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersionFinal  , false); //备份失败了，把之前的记录删掉
+            return false ;
         }
-        // 复制成功了 下面对复制后的文件打包
-        if(!EchoPack::packFile(BUFilePath + "/" +BUVersion , BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"] )){
+    }else{ // 需要打包的
+    
+        if(!EchoPack::packFile( sourceFile , BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"] )){
+
             std::cout<<"文件打包失败"<<std::endl;
             FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersion  , false); // 打包失败了，把复制的文件删掉
             return false ;
@@ -204,14 +206,14 @@ bool EchoBackup::advancedBackup(std::string sourceFile, bool ifpack , bool ifcom
         FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersion  , false); // 打包成功了，把复制的文件删掉
         
         
-        if(       !ifcompress && !ifencrypt){ //只打包
+        if(!ifcompress && !ifencrypt){ //只打包
             // 复制&打包成功，写入备份记录
             BUVersionFinal = BUVersion+BUKindsSuffix["Pack"] ;   
         }else if(  ifcompress && !ifencrypt){ //打包且压缩
             // 打包成功了 下面对打包后的文件压缩
             EchoCompress compresser;
             if(! compresser.compress(BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"] , BUFilePath + "/" +BUVersion+BUKindsSuffix["Cmp"] )){
-                std::cout<<"文件打包失败"<<std::endl;
+                std::cout<<"文件压缩失败"<<std::endl;
                 FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"]  , false); // 压缩失败了，把打包的文件删掉
                 return false ;
             }
@@ -223,7 +225,7 @@ bool EchoBackup::advancedBackup(std::string sourceFile, bool ifpack , bool ifcom
             // 打包成功了 下面对打包后的文件加密
             EchoEncrypt encrypter;
             if(! encrypter.encyptAESFile(BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"] , BUFilePath + "/" +BUVersion+BUKindsSuffix["Enc"] , password  )){
-                std::cout<<"文件打包失败"<<std::endl;
+                std::cout<<"文件加密失败"<<std::endl;
                 FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"]  , false); // 加密失败了，把打包的文件删掉
                 return false ;
             }
@@ -235,7 +237,7 @@ bool EchoBackup::advancedBackup(std::string sourceFile, bool ifpack , bool ifcom
             // 打包成功了 下面对打包后的文件压缩
             EchoCompress compresser;
             if(! compresser.compress(BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"] , BUFilePath + "/" +BUVersion+BUKindsSuffix["Cmp"] )){
-                std::cout<<"文件打包失败"<<std::endl;
+                std::cout<<"文件压缩失败"<<std::endl;
                 FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersion+BUKindsSuffix["Pack"]  , false); // 压缩失败了，把打包的文件删掉
                 return false ;
             }
@@ -243,7 +245,7 @@ bool EchoBackup::advancedBackup(std::string sourceFile, bool ifpack , bool ifcom
             // 压缩成功了，下面进行加密
             EchoEncrypt encrypter;
             if(! encrypter.encyptAESFile(BUFilePath + "/" +BUVersion+BUKindsSuffix["Cmp"] , BUFilePath + "/" +BUVersion+BUKindsSuffix["CmpEnc"] , password)){
-                std::cout<<"文件打包失败"<<std::endl;
+                std::cout<<"文件加密失败"<<std::endl;
                 FileUtils::rmDirOrFile( BUFilePath + "/" +BUVersion+BUKindsSuffix["Cmp"]  , false); // 加密失败了，把压缩的文件删掉
                 return false ;
             }
@@ -330,22 +332,32 @@ bool EchoBackup::restoreFile(std::string sourceDir, std::string filename, std::s
             return false;
         }
 
+        // // 解包
+        // if(!EchoPack::unpackBag(  sourceDir+"/"+ baseName +  BUKindsSuffix["Pack"]  ,  sourceDir+"/"+ baseName  )){
+        //     std::cout<<"文件解包失败"<<std::endl;
+        //     if(fileSuffix != BUKindsSuffix["Pack"])FileUtils::rmDirOrFile( sourceDir+"/"+ baseName + BUKindsSuffix["Pack"]  , false); // 打包失败了，把复制的文件删掉
+        //     return false ;
+        // }
+        // if(fileSuffix != BUKindsSuffix["Pack"])
+        //     FileUtils::rmDirOrFile( sourceDir+"/"+ baseName +  BUKindsSuffix["Pack"]   , false); // 解包成功了，把之前的包文件删掉
+        // // 复制到指定路径 targetfile
+        // std::cout<<sourceDir+"/"+ baseName<<std::endl<< targetfile<<std::endl;
+        // if(!FileUtils::copyAllFileKinds( sourceDir+"/"+ baseName , targetfile)){ 
+        //     std::cout<<"解包后的文件复制失败"<<std::endl;
+        //     FileUtils::rmDirOrFile( sourceDir+"/"+ baseName  , false); // 打包失败了，把复制的文件删掉
+        //     return false ;
+        // }
+        // FileUtils::rmDirOrFile( sourceDir+"/"+ baseName  , false); // 打包失败了，把复制的文件删掉
+
+
         // 解包
-        if(!EchoPack::unpackBag(  sourceDir+"/"+ baseName +  BUKindsSuffix["Pack"]  ,  sourceDir+"/"+ baseName  )){
+        if(!EchoPack::unpackBag(  sourceDir+"/"+ baseName +  BUKindsSuffix["Pack"]  ,  targetfile )){
             std::cout<<"文件解包失败"<<std::endl;
             if(fileSuffix != BUKindsSuffix["Pack"])FileUtils::rmDirOrFile( sourceDir+"/"+ baseName + BUKindsSuffix["Pack"]  , false); // 打包失败了，把复制的文件删掉
             return false ;
         }
         if(fileSuffix != BUKindsSuffix["Pack"])
             FileUtils::rmDirOrFile( sourceDir+"/"+ baseName +  BUKindsSuffix["Pack"]   , false); // 解包成功了，把之前的包文件删掉
-        // 复制到指定路径 targetfile
-        std::cout<<sourceDir+"/"+ baseName<<std::endl<< targetfile<<std::endl;
-        if(!FileUtils::copyAllFileKinds( sourceDir+"/"+ baseName , targetfile)){ 
-            std::cout<<"解包后的文件复制失败"<<std::endl;
-            FileUtils::rmDirOrFile( sourceDir+"/"+ baseName  , false); // 打包失败了，把复制的文件删掉
-            return false ;
-        }
-        FileUtils::rmDirOrFile( sourceDir+"/"+ baseName  , false); // 打包失败了，把复制的文件删掉
     }
     std::cout<<"还原成功！"<<std::endl;
     return true;

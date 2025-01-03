@@ -13,9 +13,12 @@ MainWindow::MainWindow(QWidget *parent ) : QWidget(parent) {
     int screenWidth = screen->geometry().width(); // 屏幕宽度
     int screenHeight = screen->geometry().height(); // 屏幕高度
     this->setWindowTitle("EchoBack");
-    this->resize(800, 600); // 设置窗口大小
+    this->resize(1000, 700); // 设置窗口大小
     this->move((screenWidth -  this->width()) / 2, (screenHeight - this->height()) / 2); // 设置窗口初始位置 // 计算窗口位置以居中显示 设置窗口初始位置
     this->setStyleSheet("background-color: rgba(242, 255, 248, 1)"); //应用背景颜色
+
+    int window_width = this->width() , window_height = this->height() ;
+
 
     // window 的主要层(垂直)
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -37,8 +40,8 @@ MainWindow::MainWindow(QWidget *parent ) : QWidget(parent) {
     selectfileLayout->addWidget( this->cur_selectedFile_label  , Qt::AlignLeft );
     selectfileLayout->setAlignment(this->cur_selectedFile_label, Qt::AlignLeft );
         // 添加删除文件按钮至 selectfileLayout
-    QPushButton *deleteButton = new QPushButton("删除", this);
-    deleteButton->setFixedSize(80,30);
+    QPushButton *deleteButton = new QPushButton("删除该文件", this);
+    deleteButton->setFixedSize(120,30);
     selectfileLayout->addWidget(deleteButton);
     selectfileLayout->setAlignment(deleteButton, Qt::AlignRight);
         // 将布局设置到容器小部件上
@@ -46,6 +49,7 @@ MainWindow::MainWindow(QWidget *parent ) : QWidget(parent) {
     SFcontainer->setFrameShape(QFrame::StyledPanel);  // 设置框架形状
     SFcontainer->setFrameShadow(QFrame::Raised);      // 设置框架阴影
     SFcontainer->setStyleSheet("background-color:rgba(253, 250, 239, 1);" );   // 设置容器的背景颜色
+    SFcontainer->setFixedSize(window_width, 80);  // 设置容器的大小并显示
     mainLayout->addWidget(SFcontainer ); //将容器加入垂直层
     // mainLayout->addLayout(selectfileLayout );
 
@@ -99,24 +103,24 @@ MainWindow::MainWindow(QWidget *parent ) : QWidget(parent) {
     });
     backupLayout->addLayout(optionLayout ); //将备份选项层(水平)加入垂直层
 
-    // 添加固定高度的 spacer item
-    QSpacerItem *spacer5 = new QSpacerItem(0, 5, QSizePolicy::Minimum, QSizePolicy::Fixed);
-    backupLayout->addSpacerItem(spacer5);
-
+    
     //备份按钮水平层
     QHBoxLayout *backButtonLayout = new QHBoxLayout();
         //备份按钮
     QPushButton *backupButton = new QPushButton("备份", this);
-    backupButton->setFixedSize(100,30);
+    backupButton->setFixedSize(window_width / 2 -100,30);
     backButtonLayout->addWidget(backupButton );
     backButtonLayout->setAlignment(backupButton, Qt::AlignCenter);
         // 查看备份文件按钮
     QPushButton *findBackUpFileButton = new QPushButton("已备份文件", this);
-    findBackUpFileButton->setFixedSize(100,30);
+    findBackUpFileButton->setFixedSize(window_width / 2 -100,30);
     backButtonLayout->addWidget(findBackUpFileButton);
     backButtonLayout->setAlignment(findBackUpFileButton, Qt::AlignCenter);
 
-    backupLayout->addLayout(backButtonLayout ); //将备份按钮层(水平)加入垂直层
+    backupLayout->addLayout(backButtonLayout , Qt::AlignTop ); //将备份按钮层(水平)加入垂直层
+    // 添加固定高度的 spacer item
+    QSpacerItem *spacer5 = new QSpacerItem(0, 5, QSizePolicy::Minimum, QSizePolicy::Fixed);
+    backupLayout->addSpacerItem(spacer5);
 
     //将层加入主要层mainLayout
     mainLayout->addLayout(backupLayout );

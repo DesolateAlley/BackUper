@@ -64,6 +64,7 @@ bool EchoEncrypt::encyptFile(std::string md5ofpwd,std::string md5ofmd5odpwd,std:
 
 	close(fin);
 	close(fout);
+	std::cout << "加密成功！"<<std::endl;
     return true;
 	
 }

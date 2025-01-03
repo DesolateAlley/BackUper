@@ -108,12 +108,29 @@ BackUpVersionViewer::BackUpVersionViewer(const QString &filePath , const QString
     int screenWidth = screen->geometry().width(); // 屏幕宽度
     int screenHeight = screen->geometry().height(); // 屏幕高度
     this->setWindowTitle(WindowTitle+"'s  BackUp Version");
-    this->resize(750, 320); // 设置窗口大小
-    this->move((screenWidth -  this->width()) / 2, (screenHeight - this->height()) / 2); // 设置窗口初始位置 // 计算窗口位置以居中显示 设置窗口初始位置
+    this->resize(800, 600); // 设置窗口大小
+    this->move((screenWidth -  this->width()) / 2, (screenHeight - this->height()) / 2 + 100); // 设置窗口初始位置 // 计算窗口位置以居中显示 设置窗口初始位置
+    this->setStyleSheet("background-color: rgba(242, 255, 248, 1)"); //应用背景颜色
+
+    int window_width = this->width() , window_height = this->height() ;
 
     // window 的主要层(垂直)
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
+
+    // 创建指定路径还原布局
+    QHBoxLayout *specialRestoreLayout = new QHBoxLayout();
+    QLabel *restore_path_label = new QLabel("指定还原路径为：" , this); //创建文本提示
+    restore_path_label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);// 设置文本可以被选中、复制
+    specialRestoreLayout->addWidget(restore_path_label);
+    this->pathInput = new QLineEdit(this);    // 创建文本输入框
+    this->pathInput->setPlaceholderText("Enter directory path");
+    specialRestoreLayout->addWidget(this->pathInput);
+    QPushButton *specialRestoreButton = new QPushButton("还原到指定路径", this); // 创建确认按钮
+    specialRestoreButton->setFixedSize(120,30);
+    specialRestoreLayout->addWidget(specialRestoreButton);
+    //将水平层加入主要层mainLayout
+    mainLayout->addLayout(specialRestoreLayout );
 
 
     // 创建 BackUpVersionViewer 实例并添加到布局
@@ -166,28 +183,16 @@ BackUpVersionViewer::BackUpVersionViewer(const QString &filePath , const QString
     // 添加到主布局
     mainLayout->addLayout(layout);
 
-    // 创建指定路径还原布局
-    QHBoxLayout *specialRestoreLayout = new QHBoxLayout();
-    QLabel *restore_path_label = new QLabel("指定还原路径为：" , this); //创建文本提示
-    restore_path_label->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);// 设置文本可以被选中、复制
-    specialRestoreLayout->addWidget(restore_path_label);
-    this->pathInput = new QLineEdit(this);    // 创建文本输入框
-    this->pathInput->setPlaceholderText("Enter directory path");
-    specialRestoreLayout->addWidget(this->pathInput);
-    QPushButton *specialRestoreButton = new QPushButton("还原到指定路径", this); // 创建确认按钮
-    specialRestoreButton->setFixedSize(120,30);
-    specialRestoreLayout->addWidget(specialRestoreButton);
-    //将水平层加入主要层mainLayout
-    mainLayout->addLayout(specialRestoreLayout );
+    
 
 
     // 创建查看按钮和取消按钮
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     QPushButton *restoreButton = new QPushButton("还原到原路径", this);
-    restoreButton->setFixedSize(120,30);
+    restoreButton->setFixedSize(window_width / 2 -50,30);
     buttonLayout->addWidget(restoreButton );
     QPushButton *cancelButton = new QPushButton("取消", this);
-    cancelButton->setFixedSize(120,30);
+    cancelButton->setFixedSize(window_width / 2 - 50,30);
     buttonLayout->addWidget(cancelButton);
     //将水平层加入主要层mainLayout
     mainLayout->addLayout(buttonLayout );
@@ -246,7 +251,7 @@ QString checkPath(const QString &path){
     }
         // 文件名是否有重名
     QString fileName = QFileInfo(path).fileName();  // 获取文件名
-    std::cout<<fileName.toStdString()<<std::endl;
+    // std::cout<<fileName.toStdString()<<std::endl;
     // 如果文件名已经存在
     while (!isValidFileName(fileName) || dir.exists(fileName)) {
         // 弹出对话框让用户重命名
@@ -315,13 +320,13 @@ void BackUpVersionViewer:: specialRestoreButtonClicked(){
             QMessageBox::warning(nullptr, "Notice", this->selectDirName+" Restore failed.\n还原失败，所给目录为软件备份工作目录内！不允许还原到此处"); 
             return;
         }
-        std::cout<<"sada\n";
+        // std::cout<<"sada\n";
 
-        std::cout<<(directory+'/'+ this->selectDirName).toStdString()<<std::endl;
+        // std::cout<<(directory+'/'+ this->selectDirName).toStdString()<<std::endl;
         //首先检查 selectBUPath 是否合法
         QString targetfile = checkPath(directory+'/'+ this->selectDirName) ;
         if(targetfile=="")return ;
-        std::cout<<"sada22\n";
+        // std::cout<<"sada22\n";
          // 如果有加密，就获取加密密码
         QString password="" ;
         if(this->selectifEncrypt=="Yes"){ // 备份有加密，要解密，输入密码

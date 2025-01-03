@@ -13,8 +13,10 @@ RestoreWindow::RestoreWindow(QWidget *parent ) : QWidget(parent) {
     int screenHeight = screen->geometry().height(); // 屏幕高度
     this->setWindowTitle("Restore");
     this->setStyleSheet("background-color: rgba(242, 255, 248, 1)"); //应用背景颜色
-    this->resize(700, 400); // 设置窗口大小
-    this->move((screenWidth -  this->width()) / 2, (screenHeight - this->height()) / 2); // 设置窗口初始位置 // 计算窗口位置以居中显示 设置窗口初始位置
+    this->resize(900, 500); // 设置窗口大小
+    this->move((screenWidth -  this->width()) / 2 + 100, (screenHeight - this->height()) / 2); // 设置窗口初始位置 // 计算窗口位置以居中显示 设置窗口初始位置
+
+    int window_width = this->width() , window_height = this->height() ;
 
 
     // window 的主要层(垂直)
@@ -31,10 +33,10 @@ RestoreWindow::RestoreWindow(QWidget *parent ) : QWidget(parent) {
     // 创建查看按钮和取消按钮
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     QPushButton *viewButton = new QPushButton("查看备份点", this);
-    viewButton->setFixedSize(120,30);
+    viewButton->setFixedSize(window_width / 2 - 50 ,30);
     buttonLayout->addWidget(viewButton );
     QPushButton *cancelButton = new QPushButton("取消", this);
-    cancelButton->setFixedSize(120,30);
+    cancelButton->setFixedSize(window_width / 2 -50,30);
     buttonLayout->addWidget(cancelButton);
     //将水平层加入主要层mainLayout
     mainLayout->addLayout(buttonLayout );

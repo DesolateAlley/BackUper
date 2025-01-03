@@ -4,21 +4,20 @@
 
 
 // 路径
-QString viewDirPath = "/home/cl/Desktop/EchoBack/testFiles" ;
+QString viewDirPath = "/home/cl/Desktop/EchoBack_test" ;
 // 默认的备份文件存储工作总路径
-std::string DefaultBackupPath = "/home/cl/Desktop/EchoBack/EchoBack_BackupDir" ;   //暂不支持自定义
+std::string DefaultBackupPath = "/home/cl/AAA_EchoBack/EchoBack_BackupDir" ;   //暂不支持自定义
 // 所有的文件备份总存储
 std::string DefaultBUFilesName = "BackUpFiles" ;
 // 记录所有文件备份信息的, 用于区分每次备份的是不是已经备份过，以及区分不同文件的备份
 std::string DefaultBUInfoName  = "BackUpInfo.info" ;
-
 
 // 每个文件备份文件夹里的记录，用于记录每次备份的信息
 std::string DefaultBackupRecord = "BackUpRecord.EchoBack" ;
 //打包时加的默认后缀
 std::string  packSuffix = ".EchoBackPack";
 // 不同的备份种类的后缀添加
-std::unordered_map<std::string, std::string> BUKindsSuffix = {{"UnPack" , ""},  {"Pack" , "echoP"},  {"Cmp" , ".echoPC"}, 
+std::unordered_map<std::string, std::string> BUKindsSuffix = {{"UnPack" , ""},  {"Pack" , ".echoP"},  {"Cmp" , ".echoPC"}, 
                                                             {"Enc" , ".echoPE"},  {"CmpEnc" , ".echoPCE"} };
 
 int main(int argc, char *argv[]) {

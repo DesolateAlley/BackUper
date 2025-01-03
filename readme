@@ -1,22 +1,43 @@
-
-#0 项目运行
-{
-    (1)项目环境
-    编程环境：C++17、Qt5.12.8
-    运行环境：Ubuntu 20.04.6LTS 64-bit
-
-    (2)编译环境
-    >= CMake 3.5
-
-    (3)编译运行方法
-    ①终端进入项目build路径下
-    ②运行指令"cmake .."生成cmake对应的编译工具
-    ③运行指令"make"编译项目
-    ④运行"./EchoBack"启动该项目
+#0 简介
+{   (1)项目文件结构
+        ./
+        |-build文件夹为构建编译目录，编译出的源文件也默认在次
+        |-EchoBack_test文件夹为测试文件夹
+        |   |-运行'get_testFile.sh'脚本可以生成“10随机测试样例+1固定测试样例”
+        |   |-运行'clear_testFile.sh'脚本可以删除所有的测试样例
+        |   |_Restore_test为还原文件的测试文件夹(非必要)
+        |-include文件夹为头文件源码
+        |-src文件夹为cpp源码
+        |-main为程序入口
+        |_CMakeLists.txt为构建脚本 
+    (2)项目环境
+        编程环境：C++17、Qt5.12.8
+        运行环境：Ubuntu 20.04.6LTS 64-bit
+    (3)编译环境
+        >= CMake 3.5
 
 }
 
-#1   备份目录
+#1 项目运行
+{
+    ①终端进入项目build路径下
+    ②运行指令"cmake .."生成cmake对应的编译工具
+    ③运行指令"make"编译项目
+    ④运行"  xhost +SI:localuser:root  " , 临时授权用户 X11 显示权限
+    ④运行" sudo ./EchoBack  "启动该项目 
+
+}
+
+
+
+
+
+
+
+
+
+
+#2  备份目录
     文件备份目录为：/home/cl/Desktop/Backup_King/BackupDir
     该目录下有两个文件夹(BackUpFiles  )、一个文件(BackUpInfo)
         其中 BackUpInfo 用于记录备份信息，在数据还原时查看以还原数据  

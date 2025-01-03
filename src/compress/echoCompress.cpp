@@ -115,6 +115,7 @@ bool EchoCompress::compress(std::string sourcefile, std::string targetfile){
     inFile.close();
     outFile.close();
     // 正常执行
+	std::cout << "压缩成功！"<<std::endl;
     return true;
 }
 
@@ -247,7 +248,9 @@ bool EchoCompress::decompress(std::string sourcePath, std::string targetfile){
 
     // 最后一字节
     now = buf;
-    for (char i = 0; i < (8 - zeroNum) % 8; i++){
+    // for (char i = 0; i < (8 - zeroNum) % 8; i++){
+    for (char i = 0; i < (8 - zeroNum); i++){
+
         if (now[i] == '0'){
             if (!decodePointer->left){
                 std::cout << "解码错误\n";

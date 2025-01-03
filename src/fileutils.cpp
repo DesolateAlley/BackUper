@@ -246,6 +246,7 @@ void FileUtils::identify_file_type(const std::string& filepath) {
         perror("lstat failed");
         return;
     }
+    
     if (S_ISREG(fileStat.st_mode)) {
         std::cout<<filepath+"is a regular file."<<std::endl;
     } else if (S_ISDIR(fileStat.st_mode)) {
